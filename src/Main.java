@@ -16,7 +16,7 @@ public class Main extends Application{
           
         // установка надписи
         Text text = new Text("Hello METANIT.COM!");
-        text.setLayoutY(80);    // установка положения надписи по оси Y
+        text.setLayoutY(90);    // установка положения надписи по оси Y
         text.setLayoutX(80);   // установка положения надписи по оси X
           
         Group group = new Group(text);
