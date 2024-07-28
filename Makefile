@@ -1,14 +1,7 @@
-#-----------------------
-# Compiler/linker flags
-#-----------------------
-
 Compiler = javac
 Runner = java
 
-# Compiler flags:
-# CFLAGS = \
-# 	-std=c++17 \
-# 	-O2
+
 Modules = javafx.controls
 Path_to_javaFX = /home/kuraterut/Desktop/HSE/my_projects/JavaProjects/javafx-sdk-22.0.2/lib
 Main_class = Main
@@ -17,9 +10,6 @@ Files = src/Main.java
 
 
 
-#--------
-# Colors
-#--------
 
 # Use ANSI color codes:
 BRED    = \033[1;31m
@@ -28,30 +18,6 @@ BYELLOW = \033[1;33m
 GREEN   = \033[1;35m
 BCYAN   = \033[1;36m
 RESET   = \033[0m
-
-#-------
-# Files
-#-------
-
-# INCLUDES = $(wildcard include/*.hpp)
-
-# Add "include" folder to header search path:
-# CFLAGS += -I $(abspath include)
-
-# List of sources:
-# SOURCES = $(wildcard src/*.cpp)
-
-
-# OBJECTS = $(SOURCES:src/%.cpp=build/%.o)
-
-# EXECUTABLE = build/test
-
-#---------------
-# Build process
-#---------------
-
-# By default, build executable:
-# NOTE: first target in the file is the default.
 
 
 
@@ -66,6 +32,15 @@ $(Main_class): $(Files) Makefile
 run: $(Main_class) Makefile
 	$(Runner) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -classpath ./$(Bin_dir) $(Main_class)
 
+tutorial:
+	@sudo apt update
+	@sudo apt install openjdk-17-jdk
+	@printf "\n\nНеобходимые пакеты java установлены\n\n"
+	@printf "Теперь скачай с сайта https://gluonhq.com/products/javafx/ модули javafx со следующими параметрами:\n\n"
+	@printf "Версия javaFX - 22.0.2, Операционка Linux, Архитектура x64, тип SDK\n\n"
+	@printf "Далее распакуй все в отдельную папку рядом с репозиторием(Именно рядом, не внутри).\n\n"
+	@printf "Затем в своем Makefile укажи путь к модулям в переменной Path_to_javaFX, в следующей форме: /home/<Имя пользователя>/.../javafx-sdk-22.0.2/lib\n\n"
+	@printf "Затем попробуй собрать и запустить проект у себя на компьютере, для этого зайди в директорию VeronichkaNails_APP и напиши в командной строке make run\n\n"
 
 
 clean:
