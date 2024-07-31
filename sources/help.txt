@@ -1,0 +1,1 @@
+create table CLIENTS(Client_ID int primary key auto_increment, Client_LOGIN varchar(15), Client_PSW varchar(15), Client_PHONE varchar(10), Client_NAME varchar(10), Client_LOYALCARD_ID int, Admin_comment varchar(20));
