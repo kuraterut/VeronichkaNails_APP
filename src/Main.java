@@ -1,36 +1,51 @@
 import javafx.application.Application;
 import javafx.stage.Stage;
+
+
 import javafx.scene.Scene;
 import javafx.scene.Group;
+
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.control.DatePicker;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
+
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+
+
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+
 
 import java.sql.*;
 import java.nio.file.*;
 import java.io.*;
 import java.util.*;
+import java.time.*;
+import java.time.format.*;
 
  
+
+
+
 public class Main extends Application{
+    Properties client_properties = null;
+
      
     public static void main(String[] args) throws FileNotFoundException{
         
@@ -59,11 +74,11 @@ public class Main extends Application{
 
     public FlowPane loadAuthorizationWindow(){
         FlowPane head_label = new FlowPane(new Label("АВТОРИЗАЦИЯ"));
-        Label is_valid = new Label("");
+        Label lbl_err = new Label("");
 
         Label login_lbl = new Label("Логин:  ");
         Label password_lbl = new Label("Пароль: ");
-        login_lbl.setTooltip(new Tooltip("Email или номер телефона"));
+        login_lbl.setTooltip(new Tooltip("Email или номер телефона(+7...)"));
         VBox lbls_form = new VBox(40, login_lbl, password_lbl);
 
         TextField login_field = new TextField();
@@ -106,36 +121,40 @@ public class Main extends Application{
                 else{
                     String login    = login_field.getText();
                     String password = password_field.getText();
-                    int verify_code = database.verifyClientInDB(login, password);
+                    VerifyClientCodes verify_code = database.verifyClientInDB(login, password);
                     switch (verify_code){
-                        case (0):
+                        case SUCCESS:
+                            
+                            client_properties.setProperty("login", login);
+                            try(OutputStream out = Files.newOutputStream(Paths.get("sources/client_props.properties"))){
+                                client_properties.store(out, "add info");
+                            }
+                            catch(Exception ex){System.out.println(ex);}
+
                             try{authorization_btn.getScene().setRoot(loadMainWindow());}
                             catch(Exception ex){System.out.println(ex);}
                             break;
                     
-                        case (1):
-                            is_valid.setText("Такого логина еще нет, проверьте правильность или зарегестрируйтесь");
+                        case NO_LOGIN:
+                            lbl_err.setText("Такого логина еще нет, проверьте правильность или зарегестрируйтесь");
                             break;
                         
-                        case (2):
-                            is_valid.setText("Неверный пароль, попробуйте снова");
+                        case PSW_INC:
+                            lbl_err.setText("Неверный пароль, попробуйте снова");
                             login_field.clear();
                             password_field.clear();
                             break;
-                        case (3):
+                        case DATABASE_CONN_ERR:
                             authorization_btn.getScene().setRoot(loadDataBaseErrorWindow());
                             break;
                     }
                 }
-                
-                // try{registration_btn.getScene().setRoot(loadRegistrationWindow());}
-                // catch(FileNotFoundException e){System.out.println("No file");} 
             }
         });
 
         HBox buttons = new HBox(50, registration_btn, authorization_btn);
 
-        FlowPane root = new FlowPane(Orientation.VERTICAL, 25, 25, head_label, auth_form, is_valid, buttons);
+        FlowPane root = new FlowPane(Orientation.VERTICAL, 25, 25, head_label, auth_form, lbl_err, buttons);
         
         head_label.setAlignment(Pos.CENTER);
         auth_form.setAlignment(Pos.CENTER);
@@ -148,12 +167,12 @@ public class Main extends Application{
 
     public FlowPane loadRegistrationWindow(){
         FlowPane head_label = new FlowPane(new Label("РЕГИСТРАЦИЯ"));
-        Label is_valid = new Label("");
+        Label lbl_err = new Label("");
 
         Label fio_lbl      = new Label("ФИО: ");
         Label nickname_lbl = new Label("Как обращаться: ");
         Label email_lbl    = new Label("Email: ");
-        Label phone_lbl    = new Label("Номер телефона: ");
+        Label phone_lbl    = new Label("Номер телефона(+7...): ");
         Label birthday_lbl = new Label("Дата Рождения(ДД.ММ.ГГГГ): ");
         Label password_lbl = new Label("Пароль: ");
         
@@ -164,14 +183,13 @@ public class Main extends Application{
         TextField nickname_field = new TextField();
         TextField email_field    = new TextField();
         TextField phone_field    = new TextField();
-        TextField birthday_field = new TextField();
+        DatePicker birthday_field= new DatePicker();
         TextField password_field = new TextField();
 
         fio_field.setPrefColumnCount(20);
         nickname_field.setPrefColumnCount(20);
         email_field.setPrefColumnCount(20);
         phone_field.setPrefColumnCount(20);
-        birthday_field.setPrefColumnCount(20);
         password_field.setPrefColumnCount(20);
 
         VBox fields_form = new VBox(30, fio_field, nickname_field, email_field, phone_field, birthday_field, password_field);
@@ -192,14 +210,84 @@ public class Main extends Application{
             @Override
             public void handle(ActionEvent event) {
                 authorization_btn.getScene().setRoot(loadAuthorizationWindow());
-                // try{registration_btn.getScene().setRoot(loadRegistrationWindow());}
-                // catch(FileNotFoundException e){System.out.println("No file");} 
+            }
+        });
+
+        registration_btn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                DB database = new DB();
+                try{database.getConnection();}
+                catch(Exception ex){System.out.println(ex);}
+                
+                if (database.db_conn == null){
+                    authorization_btn.getScene().setRoot(loadDataBaseErrorWindow());
+                }
+                else{
+                    String fio      = fio_field.getText();
+                    String nickname = nickname_field.getText();
+                    String email    = email_field.getText();
+                    String phone    = phone_field.getText();
+                    String password = password_field.getText();
+                    String birthday;
+                    try{birthday = birthday_field.getValue().toString();}
+                    catch(Exception ex){lbl_err.setText("Заполните поле дата рождения корректно"); return;}
+
+                    InsertClientCodes insert_code = database.insertNewClient(fio, nickname, email, phone, birthday, password);
+
+                    switch (insert_code){
+                        case SUCCESS:
+                            
+                            client_properties.setProperty("login", email);
+                            try(OutputStream out = Files.newOutputStream(Paths.get("sources/client_props.properties"))){
+                                client_properties.store(out, "add info");
+                            }
+                            catch(Exception ex){System.out.println(ex);}
+
+                            try{registration_btn.getScene().setRoot(loadMainWindow());}
+                            catch(Exception ex){System.out.println(ex);}
+                            break;
+
+                        case IN_BASE:
+                            lbl_err.setText("Аккаунт с такими данными уже есть. Авторизуйтесь или используйте другие данные");
+                            email_field.clear();
+                            password_field.clear();
+                            phone_field.clear();
+                            break;
+                    
+                        case DATABASE_CONN_ERR:
+                            authorization_btn.getScene().setRoot(loadDataBaseErrorWindow());
+                            break;
+
+                        case BIRTH_ERR:
+                            lbl_err.setText("Неправильно написана Дата Рождения. Вам должно быть более 1 года и меньше 150 лет!");
+                            break;
+
+                        case EMAIL_ERR:
+                            lbl_err.setText("Некорректно написан Email(не более 50 символов)");
+                            email_field.clear();
+                            break;
+
+                        case PHONE_ERR:
+                            lbl_err.setText("Некорректно написан телефон. Только номера из РФ(+7... и еще 10 цифр)");
+                            phone_field.clear();
+                            break;
+
+                        case PSW_ERR:
+                            lbl_err.setText("Пароль должен состоять не менее чем из 8 символов и не более чем из 20");
+                            password_field.clear();
+                            break;
+                        case FILL_FIELD:
+                            lbl_err.setText("Пожалуйста, заполните все поля для регистрации");
+                            break;
+                    }
+                }
             }
         });
 
         HBox buttons = new HBox(150, authorization_btn, registration_btn);
 
-        FlowPane root = new FlowPane(Orientation.VERTICAL, 25, 25, head_label, reg_form, is_valid, buttons);
+        FlowPane root = new FlowPane(Orientation.VERTICAL, 25, 25, head_label, reg_form, lbl_err, buttons);
         
         head_label.setAlignment(Pos.CENTER);
         reg_form.setAlignment(Pos.CENTER);
@@ -210,8 +298,13 @@ public class Main extends Application{
 
     }
 
-    public VBox loadMainWindow() throws FileNotFoundException{
-        String guest_name = "Илья";
+    public BorderPane loadMainWindow() throws FileNotFoundException{
+        // String guest_name = "Илья";
+        DB database = new DB();
+        try{database.getConnection();}
+        catch(Exception ex){System.out.println(ex);}
+        String guest_name = database.getNickname(client_properties.getProperty("login", "No"));
+
         Label head_label = new Label("Приветствуем, " + guest_name);
 
         Image avatar_image = new Image(new FileInputStream("photos/standard.jpg"));
@@ -248,14 +341,30 @@ public class Main extends Application{
         buttons_box.setAlignment(Pos.CENTER);
 
 
-        VBox root = new VBox(100, head_box, buttons_box);        
+        VBox central_box = new VBox(100, head_box, buttons_box);        
         VBox.setMargin(head_box, new Insets(50, 10, 10, 10));
+        BorderPane.setAlignment(central_box, Pos.CENTER);
+
+        Button exit_btn = new Button("Выход");
+        BorderPane.setMargin(exit_btn, new Insets(50, 50, 0, 50));
+        BorderPane.setAlignment(exit_btn, Pos.TOP_RIGHT);
+        
+        BorderPane root = new BorderPane();
+        root.setCenter(central_box);
+        root.setTop(exit_btn);
 
         btn_booking.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
                 try{btn_booking.getScene().setRoot(loadBookingWindow());}
                 catch(FileNotFoundException e){System.out.println("No file");} 
+            }
+        });
+
+        exit_btn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                exit_btn.getScene().setRoot(loadAuthorizationWindow());
             }
         });
 
@@ -279,12 +388,17 @@ public class Main extends Application{
 
 
     @Override
-    public void start(Stage stage) throws FileNotFoundException{
-        // Scene main_window_scene = create_main_window(stage);
-         
-        // stage.setFullScreen(true);
-        stage.setScene(new Scene(loadAuthorizationWindow()));
-        // stage.setScene(new Scene(loadMainWindow()));
+    public void start(Stage stage) throws FileNotFoundException, IOException{
+        
+        Properties props = new Properties();
+        try(InputStream in = Files.newInputStream(Paths.get("sources/client_props.properties"))){
+            props.load(in);
+        }
+        client_properties = props;
+        String username = client_properties.getProperty("login", "No");
+        if (username.equals("No")){stage.setScene(new Scene(loadAuthorizationWindow()));}
+        else{stage.setScene(new Scene(loadMainWindow()));}
+        
          
         stage.setTitle("VeronichkaNails_APP");
         stage.setWidth(1000);
@@ -292,61 +406,4 @@ public class Main extends Application{
          
         stage.show();
     }
-}
-
-class DB {
-    int connection_code; //0-не подключался; 1-успешно подключено; 2-ошибка подключения
-    Connection db_conn;
-    public DB(){
-        this.connection_code = 0;
-        this.db_conn = null;
-    }
-
-    public void getConnection() throws SQLException, IOException{
-        Properties props = new Properties();
-        try(InputStream in = Files.newInputStream(Paths.get("sources/database.properties"))){
-            props.load(in);
-        }
-        String url = props.getProperty("url");
-        String username = props.getProperty("username");
-        String password = props.getProperty("password");
-        try {
-            this.db_conn = DriverManager.getConnection(url, username, password);
-            this.connection_code = 1;
-            System.out.println("Connection to VeronichkaNailsApp DB succesfull!");
-        } 
-        catch(Exception ex){
-            this.connection_code = 2;
-
-            System.out.println("Connection to VeronichkaNailsApp failed...");
-            System.out.println(ex);
-            this.db_conn = null;
-        }
-    }
-
-    public int verifyClientInDB(String login, String password){ // 0-успешно; 1-нет человека; 2-пароль не тот; 3-ошибка получения данных
-        try{
-            String sqlST = "SELECT * FROM CLIENTS WHERE Client_LOGIN = ? OR Client_PHONE = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
-            prep_statement.setString(1, login);
-            prep_statement.setString(2, login);
-            ResultSet res = prep_statement.executeQuery();
-            if(res.next() == false){
-                return 1;
-            }
-            else{
-                if(password == res.getString("Client_PSW")){
-                    return 0;
-                }
-                else{
-                    return 2;
-                }
-            }
-        }
-        catch(Exception ex){
-            System.out.println(ex);
-            return 3;
-        }
-    }
-
 }

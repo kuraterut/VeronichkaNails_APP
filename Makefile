@@ -7,7 +7,7 @@ Path_to_javaFX = /home/kuraterut/Desktop/HSE/my_projects/JavaProjects/javafx-sdk
 JDBC_DRIVER = ./sources/mysql-connector-java-9.0.0.jar
 Main_class = Main
 Bin_dir = ./bin
-Files = src/Main.java
+Files = src/Main.java src/DB.java
 
 
 
@@ -38,10 +38,10 @@ run: $(Main_class) Makefile
 
 Help: src/Help.java Makefile
 	@mkdir -p $(Bin_dir)
-	$(Compiler) -d $(Bin_dir) src/Help.java
+	$(Compiler) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -d $(Bin_dir)  src/Help.java
 
 help: Help Makefile
-	$(Runner) -classpath $(Bin_dir):$(JDBC_DRIVER) Help
+	$(Runner) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -classpath $(Bin_dir):$(JDBC_DRIVER) Help
 
 
 
