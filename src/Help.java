@@ -1,68 +1,50 @@
 import javafx.application.Application;
-import javafx.stage.Stage;
 import javafx.scene.Scene;
-import javafx.scene.Group;
 import javafx.scene.control.Button;
-import javafx.scene.control.TextField;
-import javafx.scene.control.PasswordField;
 import javafx.scene.control.Label;
-import javafx.scene.control.Tooltip;
-import javafx.scene.control.DatePicker;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Region;
-import javafx.geometry.Orientation;
-import javafx.geometry.Pos;
-import javafx.geometry.HPos;
-import javafx.geometry.Insets;
+import javafx.stage.Stage;
+import javafx.scene.layout.StackPane;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+public class Help extends Application {
+    private int numButtons;
 
-import java.sql.*;
-import java.nio.file.*;
-import java.io.*;
-import java.util.*;
-import java.time.*;
- 
-public class Help extends Application{
-       
-
-    public static void main(String[] args) throws FileNotFoundException{
-        
+    public static void main(String[] args) {
         launch(args);
     }
-    
+
     @Override
-    public void start(Stage stage) throws FileNotFoundException{
-        // Scene main_window_scene = create_main_window(stage);
-        DatePicker field = new DatePicker();
-        Button btn = new Button("Click");
-        Label lbl = new Label(" ");
-        btn.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                LocalDate date = field.getValue();
-                lbl.setText(date.toString());
-            }
-        });
-        FlowPane root = new FlowPane(field, btn, lbl);
-        // stage.setFullScreen(true);
-        stage.setScene(new Scene(root));
-        // stage.setScene(new Scene(loadMainWindow()));
-         
-        stage.setTitle("VeronichkaNails_APP");
-        stage.setWidth(1000);
-        stage.setHeight(1000);
-         
+    public void start(Stage primaryStage) {
+        numButtons = getUserInput();  // Получить количество кнопок от пользователя
+
+        primaryStage.setTitle("Main Page");
+        VBox vbox = new VBox();
+
+        for (int i = 1; i <= numButtons; i++) {
+            Button button = new Button("Button " + i);
+            int pageNumber = i;
+            button.setOnAction(e -> openPage(primaryStage, pageNumber));
+            vbox.getChildren().add(button);
+        }
+
+        Scene scene = new Scene(vbox, 300, 250);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private void openPage(Stage stage, int pageNumber) {
+        Label label = new Label("Label " + pageNumber);
+        StackPane stackPane = new StackPane();
+        stackPane.getChildren().add(label);
+
+        Scene scene = new Scene(stackPane, 300, 250);
+        stage.setScene(scene);
         stage.show();
     }
-     
-    
+
+    private int getUserInput() {
+        // Для простоты возвращаем фиксированное значение
+        // В реальном приложении вы можете использовать TextInputDialog или другие средства ввода
+        return 5; // Например, возвращаем 5 кнопок
+    }
 }

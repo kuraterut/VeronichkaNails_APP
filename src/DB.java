@@ -43,6 +43,7 @@ public class DB {
         String password = props.getProperty("password");
         try {
             this.db_conn = DriverManager.getConnection(url, username, password);
+            // System.out.println("kek");
             this.connection_code = 1;
             System.out.println("Connection to VeronichkaNailsApp DB succesfull!");
         } 
@@ -173,4 +174,166 @@ public class DB {
         }
     }
 
+    public ArrayList<BookingInfo> getBookingInfoByClientId(int client_id){
+        try{
+            String sqlST = "SELECT * FROM BOOKING WHERE Client_ID = ?";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setInt(1, client_id);
+            
+            ResultSet res = prep_statement.executeQuery();
+            ArrayList<BookingInfo> arr_info = new ArrayList<BookingInfo>();
+            BookingInfo cur_book_info;
+            while(res.next()){
+                cur_book_info = new BookingInfo();
+                
+                cur_book_info.booking_id = res.getInt("Booking_ID");
+                cur_book_info.service_id = res.getInt("Service_ID");
+                cur_book_info.client_id = res.getInt("Client_ID");
+                cur_book_info.booking_datetime = res.getString("Booking_DATETIME");
+                cur_book_info.employee_id = res.getInt("Booking_EMPLOYEEID");
+                cur_book_info.admin_comment = res.getString("Admin_comment");
+
+                arr_info.add(cur_book_info);
+            }
+            return arr_info;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+    } 
+
+    public ServiceInfo getServiceInfoById(int service_id){
+        try{
+            String sqlST = "SELECT * FROM PRICE_LIST WHERE Service_ID = ?";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setInt(1, service_id);
+            ResultSet res = prep_statement.executeQuery();
+            res.next();
+            ServiceInfo service = new ServiceInfo();
+            service.service_id = res.getInt("Service_ID");
+            service.service_name = res.getString("Service_NAME");
+            service.service_price = res.getDouble("Service_PRICE");
+            service.service_description = res.getString("Service_DESCRIPTION");
+            service.service_time = res.getString("Service_TIME");
+
+            return service;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+    }
+
+    public ClientInfo getClientInfoById(int client_id){
+        try{
+            String sqlST = "SELECT * FROM CLIENTS WHERE Client_ID = ?";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setInt(1, client_id);
+            ResultSet res = prep_statement.executeQuery();
+            res.next();
+            ClientInfo client = new ClientInfo();
+            client.client_id = res.getInt("Client_ID");
+            client.client_email = res.getString("Client_EMAIL");
+            client.client_psw = res.getString("Client_PSW");
+            client.client_phone = res.getString("Client_PHONE");
+            client.client_name = res.getString("Client_NAME");
+            client.client_nickname = res.getString("Client_NICK");
+            client.client_birthday = res.getString("Client_BIRTH");
+            client.admin_comment = res.getString("Admin_comment");
+            
+
+            return client;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+    }
+
+    public ClientInfo getClientInfoByLogin(String login){
+        try{
+            String sqlST = "SELECT * FROM CLIENTS WHERE Client_EMAIL = ? OR Client_PHONE = ?";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setString(1, login);
+            prep_statement.setString(2, login);
+            ResultSet res = prep_statement.executeQuery();
+
+            res.next();
+            ClientInfo client = new ClientInfo();
+            client.client_id = res.getInt("Client_ID");
+            client.client_email = res.getString("Client_EMAIL");
+            client.client_psw = res.getString("Client_PSW");
+            client.client_phone = res.getString("Client_PHONE");
+            client.client_name = res.getString("Client_NAME");
+            client.client_nickname = res.getString("Client_NICK");
+            client.client_birthday = res.getString("Client_BIRTH");
+            client.admin_comment = res.getString("Admin_comment");
+            return client;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+    }
+
+    public EmployeeInfo getEmployeeInfoById(int employee_id){
+        try{
+            String sqlST = "SELECT * FROM EMPLOYEES WHERE Employee_ID = ?";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setInt(1, employee_id);
+            ResultSet res = prep_statement.executeQuery();
+            res.next();
+            EmployeeInfo employee = new EmployeeInfo();
+            employee.employee_id = res.getInt("Employee_ID");
+            employee.employee_name = res.getString("Employee_NAME");
+            employee.employee_exp = res.getString("Employee_EXP");
+            employee.employee_salary = res.getDouble("Employee_SALARY");
+            employee.employee_type = res.getString("Employee_TYPE");
+            
+
+            return employee;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+    }
+}
+
+class ServiceInfo{
+    int service_id;
+    String service_name;
+    double service_price;
+    String service_description;
+    String service_time;
+}
+
+class ClientInfo{
+    int client_id;
+    String client_email;
+    String client_psw;
+    String client_phone;
+    String client_name;
+    String client_nickname;
+    String client_birthday;
+    String admin_comment;
+}
+
+class BookingInfo{
+    int booking_id;
+    int service_id;
+    int client_id;
+    String booking_datetime;
+    int employee_id;
+    String admin_comment;
+    boolean is_valid = true;
+}
+
+class EmployeeInfo{
+    int employee_id;
+    String employee_name;
+    String employee_exp;
+    double employee_salary;
+    String employee_type;
 }
