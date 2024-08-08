@@ -1,11 +1,13 @@
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
+import javafx.scene.control.*;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.*;
 
+import java.util.*;
 public class Help extends Application {
     private int numButtons;
 
@@ -43,8 +45,18 @@ public class Help extends Application {
     }
 
     private int getUserInput() {
-        // Для простоты возвращаем фиксированное значение
-        // В реальном приложении вы можете использовать TextInputDialog или другие средства ввода
-        return 5; // Например, возвращаем 5 кнопок
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle("Input Required");
+        alert.setHeaderText("Enter the number of buttons:");
+        alert.setContentText("Number of buttons:");
+
+        Optional<ButtonType> option = alert.showAndWait();
+        if (option.get() == null || option.get() == ButtonType.CANCEL){
+            return 0;
+        }
+        else if (option.get() == ButtonType.OK){
+            return 1;
+        }
+        return 2;
     }
 }

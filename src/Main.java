@@ -5,6 +5,11 @@ import javafx.stage.Stage;
 import javafx.scene.Scene;
 import javafx.scene.Group;
 
+import javafx.scene.control.Alert.AlertType;
+
+
+
+import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
 import javafx.scene.control.DatePicker;
@@ -12,6 +17,7 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.Label;
 import javafx.scene.control.Tooltip;
 
+import javafx.scene.layout.*;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
@@ -312,6 +318,7 @@ public class Main extends Application{
 
 
     public VBox parseBookingInfo(ArrayList<BookingInfo> info){
+        
         if (info == null){
             Label err = new Label("Ошибка получения данных");
             VBox root = new VBox(err);
@@ -319,13 +326,9 @@ public class Main extends Application{
             return root;
 
         }
-        else if(info.isEmpty()){
-            Label no_booking = new Label("Нет текущих записей");
-            VBox root = new VBox(no_booking);
-            root.setAlignment(Pos.CENTER);
-            return root;
-        }
         else{
+            Label no_booking = new Label("Нет текущих записей");
+
             Label cur_info_lbl;
             VBox root = new VBox();
             root.setAlignment(Pos.CENTER);
@@ -348,42 +351,52 @@ public class Main extends Application{
             table.add(new Label("Когда"), 4, 0);
             table.add(new Label("На сколько"), 5, 0);
             
-            root.getChildren().add(table);
-            
-            for (int i = 0; i < info.size(); i++){
-                Button more = new Button("Подробнее");
-                int num = i;
-                cur_book_info = info.get(i);
-                cur_service_info = database.getServiceInfoById(cur_book_info.service_id);
-                cur_employee_info = database.getEmployeeInfoById(cur_book_info.employee_id);
-                
-                table.add(new Label(String.format("%d", i+1)), 0, i+1);
-                table.add(new Label(cur_service_info.service_name), 1, i+1);
-                table.add(new Label(String.format("%.2f", cur_service_info.service_price)), 2, i+1);
-                table.add(new Label(cur_employee_info.employee_name.replaceFirst(" ", "\n")), 3, i+1);
-                table.add(new Label(parseDateTime(cur_book_info.booking_datetime)), 4, i+1);
-                table.add(new Label(parseTime(cur_service_info.service_time)), 5, i+1);
-                table.add(more, 6, i+1);
+            boolean is_empty = true;
+            int num_row = 1;
 
-                more.setOnAction(event -> actionBookingPage(num, more));
-                // if (info.size() > 3 && i == 2){
-                //     Button btn = new Button("Все записи");
-                //     root.getChildren().add(btn);
-                //     break;
-                // }
+            for (int i = 0; i < info.size(); i++){
+                if (info.get(i).booking_status == 1){
+                    is_empty = false;
+                    Button more = new Button("Подробнее");
+                    int num = i;
+                    cur_book_info = info.get(i);
+                    cur_service_info = database.getServiceInfoById(cur_book_info.service_id);
+                    cur_employee_info = database.getEmployeeInfoById(cur_book_info.employee_id);
+                    
+                    table.add(new Label(String.format("%d", num_row)), 0, num_row);
+                    table.add(new Label(cur_service_info.service_name), 1, num_row);
+                    table.add(new Label(String.format("%.2f", cur_service_info.service_price)), 2, num_row);
+                    table.add(new Label(cur_employee_info.employee_name.replaceFirst(" ", "\n")), 3, num_row);
+                    table.add(new Label(parseDateTime(cur_book_info.booking_datetime)), 4, num_row);
+                    table.add(new Label(parseTime(cur_service_info.service_time)), 5, num_row);
+                    table.add(more, 6, num_row);
+
+                    more.setOnAction(event -> actionBookingPage(num, more, 1));
+                    num_row++;
+                    // if (info.size() > 3 && i == 2){
+                    //     Button btn = new Button("Все записи");
+                    //     root.getChildren().add(btn);
+                    //     break;
+                    // }
+                }
             }
 
-
+            if (!is_empty){
+                root.getChildren().add(table);
+            }
+            else{
+                root.getChildren().add(no_booking);
+            }
             return root;
         }
     }
 
-    public void actionBookingPage(final int num_page, Button more){
-        try{more.getScene().setRoot(loadBookingPageWindow(num_page));}
+    public void actionBookingPage(final int num_page, Button more, int need_btn_cancel){
+        try{more.getScene().setRoot(loadBookingPageWindow(num_page, need_btn_cancel));}
         catch(Exception ex){System.out.println(ex);}
     }
 
-    public VBox loadBookingPageWindow(int num_page) throws FileNotFoundException{
+    public VBox loadBookingPageWindow(int num_page, int need_btn_cancel) throws FileNotFoundException{
         BookingInfo booking_info = database.getBookingInfoByClientId(client_info.client_id).get(num_page);
         ServiceInfo service_info = database.getServiceInfoById(booking_info.service_id);
         EmployeeInfo employee_info = database.getEmployeeInfoById(booking_info.employee_id);
@@ -439,15 +452,84 @@ public class Main extends Application{
         
         Button cancel_btn = new Button("Отменить запись");
         Button escape_btn = new Button("Готово");
-        HBox btns = new HBox(cancel_btn, escape_btn);
+        HBox btns = new HBox(150);
+        if (need_btn_cancel == 1){
+            btns.getChildren().addAll(cancel_btn, escape_btn);
+            escape_btn.setOnAction(new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    try{escape_btn.getScene().setRoot(loadMainWindow());}
+                    catch(FileNotFoundException e){System.out.println("No file");}
+                }   
+            });
+        }
+        else{
+            btns.getChildren().addAll(escape_btn);
+            escape_btn.setOnAction(new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    try{escape_btn.getScene().setRoot(loadHistoryWindow());}
+                    catch(FileNotFoundException e){System.out.println("No file");}
+                }
+            });
+        }
         btns.setAlignment(Pos.CENTER);
         root.getChildren().addAll(head_booking_info, table_booking, head_employee_info, table_employee, btns);
-        return root;
 
+        
+
+        cancel_btn.setOnAction(event -> cancelBookingBtnAction(booking_info.booking_id, cancel_btn));
+
+        return root;
+    }
+
+    public void cancelBookingBtnAction(int booking_id, Button btn){
+        int alert_code = confirmDeleteBookingDialog();
+        if(alert_code == 1){
+            int deleting_code = database.deleteBookingById(booking_id);
+            createInfoOfDeletingBookingDialog(deleting_code);
+            if (deleting_code == 1){
+                try{btn.getScene().setRoot(loadMainWindow());}
+                catch(FileNotFoundException e){System.out.println("No file");}
+            }
+        }
+    }
+
+    public void createInfoOfDeletingBookingDialog(int code){
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("Отмена записи");
+        alert.setHeaderText("Результат отмены:");
+        
+
+        if (code == 1){    
+            alert.setContentText("Успешно отменено");
+        }
+        else {
+            alert.setContentText("Не удалось отменить, Пожалуйста свяжитесь с администратором или попробуте еще раз");
+        }
+        alert.showAndWait();
+    }
+
+    public int confirmDeleteBookingDialog(){
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle("Подтверждение");
+        alert.setHeaderText("Нажмите ОК, если подтверждаете, Cancel в ином случае");
+        alert.setContentText("Подтвердите");
+
+        Optional<ButtonType> option = alert.showAndWait();
+        if (option.get() == null || option.get() == ButtonType.CANCEL){
+            return 0;
+        }
+        else {
+            return 1;
+        }
     }
 
 
     public BorderPane loadMainWindow() throws FileNotFoundException{
+        database.updateBookingTableByClientId(client_info.client_id);
+
+        isMenuVisible = true;
         BorderPane root = new BorderPane();
         String guest_name = database.getNickname(client_properties.getProperty("login", "No"));
 
@@ -549,6 +631,14 @@ public class Main extends Application{
             }
         });
 
+        btn_history.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                try{btn_history.getScene().setRoot(loadHistoryWindow());}
+                catch(FileNotFoundException e){System.out.println("No file");} 
+            }
+        });
+
         exit_btn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -593,9 +683,60 @@ public class Main extends Application{
 
 
     public VBox loadBookingWindow() throws FileNotFoundException{
-        Label head_label = new Label("Это окно для записей");
+        Label head_label = new Label("Выберите услугу");
         final Button back_btn = new Button("Назад");
-        VBox root = new VBox(100, head_label, back_btn);
+        VBox root = new VBox(100, head_label);
+        root.setAlignment(Pos.CENTER);
+
+        GridPane table = new GridPane();
+        table.setAlignment(Pos.CENTER);
+        table.setHgap(25);
+        table.setVgap(25);
+
+        table.add(new Label("№"), 0, 0);
+        table.add(new Label("Услуга"), 1, 0);
+        table.add(new Label("Стоимость"), 2, 0);
+        table.add(new Label("Длительность"), 3, 0);
+        table.add(new Label("Подробнее"), 4, 0);
+
+        ArrayList<ServiceInfo> services = database.getServiceInfo();
+        for(int i = 0; i < services.size(); i++){
+            Button book_service_btn = new Button("Записаться");
+            
+            table.add(new Label(String.format("%d", i+1)), 0, i+1);
+            table.add(new Label(services.get(i).service_name), 1, i+1);
+            table.add(new Label(String.format("%.2f", services.get(i).service_price)), 2, i+1);
+            table.add(new Label(parseTime(services.get(i).service_time)), 3, i+1);
+            table.add(new Label(services.get(i).service_description), 4, i+1);
+            table.add(book_service_btn, 5, i+1);
+            ////////////////////////////////////
+            ////////////////////////////////////
+            ////////////////////////////////////
+            book_service_btn.setOnAction(new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    int confirmation_code = confirmBooking();
+                    if (confirmation_code == 1){
+                        createInfoAboutBooking(1);
+                        try{back_btn.getScene().setRoot(loadMainWindow());}
+                        catch(FileNotFoundException e){System.out.println("No file");}
+                    }
+
+                }
+            });
+            
+            //Доделать создание записи
+            ////////////////////////////////////
+            ////////////////////////////////////
+            ////////////////////////////////////
+        }
+
+
+        root.getChildren().addAll(table, back_btn);
+
+
+
+
 
         back_btn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -607,10 +748,107 @@ public class Main extends Application{
         return root;
     }
 
+    public void createInfoAboutBooking(int code){
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("Запись");
+        alert.setHeaderText("Результат Записи:");
+        
+        if (code == 1){    
+            alert.setContentText("Поздравляем! Вы записаны, вся информация находится на главном экране");
+        }
+        else {
+            alert.setContentText("Не удалось записаться, Пожалуйста свяжитесь с администратором или попробуте еще раз");
+        }
+        
+        alert.showAndWait();
+    }
+
+    public int confirmBooking(){
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle("Подтверждение");
+        alert.setHeaderText("Нажмите ОК, если подтверждаете запись, Cancel в ином случае");
+        alert.setContentText("Вы уверены, что хотите записаться?");
+
+        Optional<ButtonType> option = alert.showAndWait();
+        if (option.get() == null || option.get() == ButtonType.CANCEL){
+            return 0;
+        }
+        else {
+            return 1;
+        }
+    }
+
+
     public VBox loadHistoryWindow() throws FileNotFoundException{
-        Label head_label = new Label("Это окно для Истории посещений");
+        Label head_label = new Label("История посещений");
         final Button back_btn = new Button("Назад");
-        VBox root = new VBox(100, head_label, back_btn);
+        VBox root = new VBox(100, head_label);
+        
+        database.updateBookingTableByClientId(client_info.client_id);
+        ArrayList<BookingInfo> info = database.getBookingInfoByClientId(client_info.client_id);
+
+
+        if (info == null){
+            Label err = new Label("Ошибка получения данных");
+            root.getChildren().add(err);
+            root.setAlignment(Pos.CENTER);
+            
+
+        }
+        else if(info.isEmpty()){
+            Label no_booking = new Label("Нет записей");
+            root.getChildren().add(no_booking);
+            root.setAlignment(Pos.CENTER);
+            
+        }
+        else{
+            root.setAlignment(Pos.CENTER);
+            HBox lbl_btn_box;
+            BookingInfo cur_book_info;
+            ServiceInfo cur_service_info;
+            EmployeeInfo cur_employee_info;
+            
+
+            GridPane table = new GridPane();
+            
+            table.setAlignment(Pos.CENTER);
+            table.setVgap(15);
+            table.setHgap(15);
+
+            table.add(new Label("№"), 0, 0);
+            table.add(new Label("Услуга"), 1, 0);
+            table.add(new Label("Цена"), 2, 0);
+            table.add(new Label("Мастер"), 3, 0);
+            table.add(new Label("Когда"), 4, 0);
+            table.add(new Label("На сколько"), 5, 0);
+            table.add(new Label("Статус"), 6, 0);
+            
+            root.getChildren().add(table);
+            int num_row = 1;
+            for (int i = 0; i < info.size(); i++){
+                Button more = new Button("Подробнее");
+                int num = i;
+                String status;
+                cur_book_info = info.get(i);
+                cur_service_info = database.getServiceInfoById(cur_book_info.service_id);
+                cur_employee_info = database.getEmployeeInfoById(cur_book_info.employee_id);
+                if(cur_book_info.booking_status == 1){status = "Ждем Вас!";}
+                else{status = "Завершено!";}
+
+                table.add(new Label(String.format("%d", num_row)), 0, num_row);
+                table.add(new Label(cur_service_info.service_name), 1, num_row);
+                table.add(new Label(String.format("%.2f", cur_service_info.service_price)), 2, num_row);
+                table.add(new Label(cur_employee_info.employee_name.replaceFirst(" ", "\n")), 3, num_row);
+                table.add(new Label(parseDateTime(cur_book_info.booking_datetime)), 4, num_row);
+                table.add(new Label(parseTime(cur_service_info.service_time)), 5, num_row);
+                table.add(new Label(status), 6, num_row);
+                table.add(more, 7, num_row);
+
+                more.setOnAction(event -> actionBookingPage(num, more, 0));
+                num_row++;
+            }
+        }
+
 
         back_btn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -619,6 +857,8 @@ public class Main extends Application{
                 catch(FileNotFoundException e){System.out.println("No file");}
             }
         });
+
+        root.getChildren().add(back_btn);
         return root;
     }
 

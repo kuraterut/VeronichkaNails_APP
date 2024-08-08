@@ -1,12 +1,12 @@
 create table CLIENTS(Client_ID int primary key auto_increment, Client_EMAIL TEXT, Client_PSW TEXT, Client_PHONE varchar(12), Client_NAME TEXT, Client_NICK TEXT, Client_BIRTH date, Admin_comment TEXT);
 
-create table BOOKING(Booking_ID int primary key auto_increment, Service_ID int, Client_ID int, Booking_DATETIME datetime, Booking_EMPLOYEEID int, Admin_comment TEXT);
+create table BOOKING(Booking_ID int primary key auto_increment, Service_ID int, Client_ID int, Booking_DATETIME datetime, Booking_EMPLOYEEID int, Booking_STATUS int, Admin_comment TEXT);
 
 create table PRICE_LIST(Service_ID int primary key auto_increment, Service_NAME TEXT, Service_PRICE double, Service_DESCRIPTION TEXT, Service_TIME TIME);
 
 create table EMPLOYEES(Employee_ID int primary key auto_increment, Employee_NAME TEXT, Employee_EXP TEXT, Employee_SALARY double, Employee_TYPE TEXT);
 
-INSERT INTO BOOKING (Service_ID, Client_ID, Booking_DATETIME, Booking_EMPLOYEEID, Admin_comment) Values (1, 1, '20201010101010', 1, 'лол');
+INSERT INTO BOOKING (Service_ID, Client_ID, Booking_DATETIME, Booking_EMPLOYEEID, Booking_STATUS, Admin_comment) Values (1, 1, '20251010101010', 1, 1, 'лол');
 
 INSERT INTO PRICE_LIST (Service_NAME, Service_PRICE, Service_DESCRIPTION, Service_TIME) Values ('Маникюр лак', 1500.00, 'Маникюр лаком', '02:00:00');
 

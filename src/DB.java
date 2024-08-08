@@ -191,6 +191,7 @@ public class DB {
                 cur_book_info.client_id = res.getInt("Client_ID");
                 cur_book_info.booking_datetime = res.getString("Booking_DATETIME");
                 cur_book_info.employee_id = res.getInt("Booking_EMPLOYEEID");
+                cur_book_info.booking_status = res.getInt("Booking_STATUS");
                 cur_book_info.admin_comment = res.getString("Admin_comment");
 
                 arr_info.add(cur_book_info);
@@ -224,6 +225,35 @@ public class DB {
             return null;
         }
     }
+
+    public ArrayList<ServiceInfo> getServiceInfo(){
+        try{
+            String sqlST = "SELECT * FROM PRICE_LIST";
+            Statement statement = this.db_conn.createStatement();
+            ResultSet res = statement.executeQuery(sqlST);
+
+
+            ArrayList<ServiceInfo> arr_info = new ArrayList<ServiceInfo>();
+            ServiceInfo cur_service_info;
+            while(res.next()){
+                cur_service_info = new ServiceInfo();
+
+                cur_service_info.service_id = res.getInt("Service_ID");
+                cur_service_info.service_name = res.getString("Service_NAME");
+                cur_service_info.service_price = res.getDouble("Service_PRICE");
+                cur_service_info.service_time = res.getString("Service_TIME");
+                cur_service_info.service_description = res.getString("Service_DESCRIPTION");
+                
+
+                arr_info.add(cur_service_info);
+            }
+            return arr_info;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+    } 
 
     public ClientInfo getClientInfoById(int client_id){
         try{
@@ -299,6 +329,56 @@ public class DB {
             return null;
         }
     }
+
+    public int deleteBookingById(int id){
+        try{
+            String sqlST = "DELETE FROM BOOKING WHERE Booking_ID = ?";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setInt(1, id);
+            int rows = prep_statement.executeUpdate();
+            return rows;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return 0;
+        }
+    }
+
+    public void updateBookingTableByClientId(int id){
+        try{
+            ArrayList<BookingInfo> booking_info = this.getBookingInfoByClientId(id);
+            Statement statement = this.db_conn.createStatement();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            ResultSet datetime_now_res = statement.executeQuery("SELECT NOW()");
+            datetime_now_res.next();
+            LocalDateTime datetime_now = LocalDateTime.parse(datetime_now_res.getString(1), formatter);
+            for (int i = 0; i < booking_info.size(); i++){
+                LocalDateTime datetime_cur_booking = LocalDateTime.parse(booking_info.get(i).booking_datetime, formatter);
+                Duration duration = Duration.between(datetime_now, datetime_cur_booking);
+                if (duration.isNegative() && booking_info.get(i).booking_status == 1){
+                    this.changeBookingStatusById(booking_info.get(i).booking_id, 0);
+                }
+
+            }
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+        }
+    }
+
+
+
+    public void changeBookingStatusById(int id, int status){
+        try{
+            String sqlST = "UPDATE BOOKING SET Booking_STATUS = 0 WHERE Booking_ID = ?";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setInt(1, id);
+            int rows = prep_statement.executeUpdate();
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+        }
+    }
 }
 
 class ServiceInfo{
@@ -326,6 +406,7 @@ class BookingInfo{
     int client_id;
     String booking_datetime;
     int employee_id;
+    int booking_status;
     String admin_comment;
     boolean is_valid = true;
 }
