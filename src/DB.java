@@ -5,6 +5,10 @@ import java.util.*;
 import java.time.*;
 import java.time.format.*;
 
+import javax.imageio.*;
+import java.awt.*;
+import java.awt.image.*;
+
 enum InsertClientCodes{
     
     SUCCESS,
@@ -26,7 +30,7 @@ enum VerifyClientCodes{
 }
 
 public class DB {
-    int connection_code; //0-не подключался; 1-успешно подключено; 2-ошибка подключения
+    int connection_code; //0-не подключался; 1-спешно подключено; 2-ошибка подключения
     Connection db_conn;
     public DB(){
         this.connection_code = 0;
@@ -43,7 +47,6 @@ public class DB {
         String password = props.getProperty("password");
         try {
             this.db_conn = DriverManager.getConnection(url, username, password);
-            // System.out.println("kek");
             this.connection_code = 1;
             System.out.println("Connection to VeronichkaNailsApp DB succesfull!");
         } 
@@ -173,6 +176,36 @@ public class DB {
             return "";            
         }
     }
+
+    public BookingInfo getBookingInfoById(int id){
+        try{
+            String sqlST = "SELECT * FROM BOOKING WHERE Booking_ID = ?";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setInt(1, id);
+            
+            ResultSet res = prep_statement.executeQuery();
+            
+            res.next();
+            BookingInfo cur_book_info = new BookingInfo();
+            
+            cur_book_info.booking_id = res.getInt("Booking_ID");
+            cur_book_info.service_id = res.getInt("Service_ID");
+            cur_book_info.client_id = res.getInt("Client_ID");
+            cur_book_info.booking_datetime = res.getString("Booking_DATETIME");
+            cur_book_info.employee_id = res.getInt("Booking_EMPLOYEEID");
+            cur_book_info.booking_status = res.getInt("Booking_STATUS");
+            cur_book_info.admin_comment = res.getString("Admin_comment");
+
+            
+            return cur_book_info;
+            }
+        
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+    } 
+    
 
     public ArrayList<BookingInfo> getBookingInfoByClientId(int client_id){
         try{
@@ -319,8 +352,7 @@ public class DB {
             employee.employee_name = res.getString("Employee_NAME");
             employee.employee_exp = res.getString("Employee_EXP");
             employee.employee_salary = res.getDouble("Employee_SALARY");
-            employee.employee_type = res.getString("Employee_TYPE");
-            
+            employee.employee_services_id_set = res.getString("Employee_ServicesIDSet");            
 
             return employee;
         }
@@ -330,12 +362,71 @@ public class DB {
         }
     }
 
+
+//заменить на cancelBookingById()
+
     public int deleteBookingById(int id){
         try{
+            BookingInfo booking = getBookingInfoById(id);
+            ServiceInfo service = getServiceInfoById(booking.service_id);
+
+
             String sqlST = "DELETE FROM BOOKING WHERE Booking_ID = ?";
             PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
             prep_statement.setInt(1, id);
             int rows = prep_statement.executeUpdate();
+
+            sqlST = "SELECT * FROM WORK_DAYS WHERE Employee_ID = ? AND Date = ?";
+            prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setInt(1, booking.employee_id);
+            prep_statement.setString(2, booking.booking_datetime.split(" ")[0].replace("-", ""));
+            ResultSet res = prep_statement.executeQuery();
+            res.next();
+            String cur_timetable = res.getString("Timetable");
+
+            String booking_time = booking.booking_datetime.split(" ")[1];
+            String service_time = service.service_time;
+            int service_cell_count = (60*Integer.parseInt(service_time.substring(0, 2))+Integer.parseInt(service_time.substring(3, 5)))/30;
+
+
+            String time_start_str = res.getString("Time_START");
+            int hours_start = Integer.parseInt(time_start_str.substring(0, 2));
+            int minutes_start = Integer.parseInt(time_start_str.substring(3, 5));
+            LocalTime time_start = LocalTime.of(hours_start, minutes_start);
+
+            int hours_book = Integer.parseInt(booking_time.substring(0, 2));
+            int minutes_book = Integer.parseInt(booking_time.substring(3, 5));
+            LocalTime time_book = LocalTime.of(hours_book, minutes_book);
+
+            Duration duration = Duration.between(time_start, time_book);
+            
+            int cells_from_start = (int)duration.toMinutes()/30;
+            
+            
+            String new_timetable = cur_timetable.substring(0, cells_from_start)+"1".repeat(service_cell_count)+cur_timetable.substring(cells_from_start+service_cell_count, cur_timetable.length());
+            
+            sqlST = "UPDATE WORK_DAYS SET Timetable = ? WHERE Employee_ID = ? AND Date = ?";
+            prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setString(1, new_timetable);
+            prep_statement.setInt(2, booking.employee_id);
+            prep_statement.setString(3, booking.booking_datetime.split(" ")[0].replace("-", ""));
+            rows = prep_statement.executeUpdate();
+
+            // System.out.println(new_timetable);
+
+            // sqlST = "UPDATE WORK_DAYS SET Timetable = ? WHERE Employee_ID = ? AND Date = ?";
+            // prep_statement = this.db_conn.prepareStatement(sqlST);
+            // prep_statement.setString(1, new_timetable);
+            // prep_statement.setInt(2, employee_id);
+            // prep_statement.setString(3, date.replace("-", ""));
+            // int rows = prep_statement.executeUpdate();
+
+
+
+
+
+
+
             return rows;
         }
         catch(Exception ex){
@@ -379,6 +470,196 @@ public class DB {
             System.out.println(ex);
         }
     }
+
+    public ArrayList<String> getFreeTimeInfo(String date, int employee_id, int service_id){
+        try{
+            String sqlST = "SELECT * FROM WORK_DAYS WHERE Date = ? AND Employee_ID = ?";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setString(1, date.replace("-", ""));
+            prep_statement.setInt(2, employee_id);
+            ResultSet res = prep_statement.executeQuery();
+            boolean res_next = res.next();
+            ServiceInfo service = getServiceInfoById(service_id);
+            ArrayList<String> result_array = new ArrayList<String>();
+            if (res_next == false){
+                return result_array;
+            }
+
+            String timetable_array = res.getString("Timetable");
+            String time_start_str = res.getString("Time_START");
+            String service_time = service.service_time;
+
+            int service_cell_count = (60*Integer.parseInt(service_time.substring(0, 2))+Integer.parseInt(service_time.substring(3, 5)))/30;
+
+            int hours_start = Integer.parseInt(time_start_str.substring(0, 2));
+            int minutes_start = Integer.parseInt(time_start_str.substring(3, 5));
+
+            LocalTime time_start = LocalTime.of(hours_start, minutes_start);
+
+            for (int i = 0; i <= timetable_array.length() - service_cell_count; i++){
+                String cur_arr = timetable_array.substring(i, i+service_cell_count);
+                if (cur_arr.indexOf("0") == -1){
+                    LocalTime time_to_arr = time_start.plusMinutes(i*30);
+                    result_array.add(time_to_arr.toString());
+                }
+            }
+            return result_array;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+    }   
+
+
+    public ArrayList<Integer> getAllEmployeesIdWhoHaveService(int service_id){
+        try{
+            String sqlST = "SELECT * FROM EMPLOYEES";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            ResultSet res = prep_statement.executeQuery();
+            ArrayList<Integer> ans = new ArrayList<Integer>();
+            while(res.next()){
+                String[] employee_services_id_set = res.getString("Employee_ServicesIDSet").split(" ");
+                ArrayList<String> services_id_set_arr = new ArrayList<String>(Arrays.asList(employee_services_id_set));
+                if (services_id_set_arr.indexOf(String.valueOf(service_id)) != -1){
+                    ans.add(res.getInt("Employee_ID"));
+                }
+            }
+            return ans;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+    }
+
+    public void updateEmployeeWorkDayTimetable(String time, int service_id, String date, int employee_id){
+        try{
+            ServiceInfo service = getServiceInfoById(service_id);
+            String service_time = service.service_time;
+            int service_cell_count = (60*Integer.parseInt(service_time.substring(0, 2))+Integer.parseInt(service_time.substring(3, 5)))/30;
+            
+            String sqlST = "SELECT * FROM WORK_DAYS WHERE Date = ? AND Employee_ID = ?";
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setString(1, date.replace("-", ""));
+            prep_statement.setInt(2, employee_id);
+            ResultSet res = prep_statement.executeQuery();
+            res.next();
+            String cur_timetable = res.getString("Timetable");
+
+            String time_start_str = res.getString("Time_START");
+            int hours_start = Integer.parseInt(time_start_str.substring(0, 2));
+            int minutes_start = Integer.parseInt(time_start_str.substring(3, 5));
+            LocalTime time_start = LocalTime.of(hours_start, minutes_start);
+
+            int hours_book = Integer.parseInt(time.substring(0, 2));
+            int minutes_book = Integer.parseInt(time.substring(3, 5));
+            LocalTime time_book = LocalTime.of(hours_book, minutes_book);
+
+            Duration duration = Duration.between(time_start, time_book);
+            
+            int cells_from_start = (int)duration.toMinutes()/30;
+            
+            
+            String new_timetable = cur_timetable.substring(0, cells_from_start)+"0".repeat(service_cell_count)+cur_timetable.substring(cells_from_start+service_cell_count, cur_timetable.length());
+            
+            sqlST = "UPDATE WORK_DAYS SET Timetable = ? WHERE Employee_ID = ? AND Date = ?";
+            prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setString(1, new_timetable);
+            prep_statement.setInt(2, employee_id);
+            prep_statement.setString(3, date.replace("-", ""));
+            int rows = prep_statement.executeUpdate();
+        }
+
+        catch(Exception ex){
+            System.out.println(ex);
+            return;
+        }
+    }
+
+    public void updateBookingBase(int client_id, int service_id, String date, String time, int employee_id){
+        try{
+            
+            String final_datetime = date.replace("-", "") + time.replace(":", "")+"00";
+
+            String sqlST = "INSERT INTO BOOKING (Service_ID, Client_ID, Booking_DATETIME, Booking_EMPLOYEEID, Booking_STATUS, Admin_comment) Values (?, ?, ?, ?, ?, ?);";;
+            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement.setInt(1, service_id);
+            prep_statement.setInt(2, client_id);
+            prep_statement.setString(3, final_datetime);
+            prep_statement.setInt(4, employee_id);
+            prep_statement.setInt(5, 1);
+            prep_statement.setString(6, "Доп Информация: ");
+            
+            int rows = prep_statement.executeUpdate();
+        }
+
+        catch(Exception ex){
+            System.out.println(ex);
+            return;
+        }
+    }
+
+
+    public void createClientAvatar(int client_id){
+        ClientInfo client = getClientInfoById(client_id);
+        String[] fio = client.client_name.split(" ");
+        String initials = "";
+
+        if(fio.length == 1){initials+=fio[0].charAt(0);}
+        else{initials+=fio[0].charAt(0)+""+fio[1].charAt(0);}
+
+
+        BufferedImage background = loadImage("photos/background.jpg");
+        if (background == null) {
+            System.out.println("Ошибка загрузки фонового изображения.");
+            return;
+        }
+
+        // Создаем новое изображение с фоном
+        BufferedImage outputImage = new BufferedImage(background.getWidth(), background.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = outputImage.createGraphics();
+        
+        // Рисуем фоновое изображение
+        g.drawImage(background, 0, 0, null);
+        
+        // Устанавливаем шрифт и цвет для инициалов
+        g.setFont(new Font("Arial", Font.BOLD, 350));
+        g.setColor(Color.WHITE); // Цвет текста (можно изменить)
+        
+        // Вычисляем размеры текста и его положение
+        FontMetrics fm = g.getFontMetrics();
+        int x = (outputImage.getWidth() - fm.stringWidth(initials)) / 2; // Центрируем по X
+        int y = (outputImage.getHeight() - fm.getHeight()) / 2 + fm.getAscent(); // Центрируем по Y
+
+        // Рисуем инициалы на изображении
+        g.drawString(initials, x, y);
+        
+        // Освобождаем ресурсы графики
+        g.dispose();
+
+        // Сохраняем итоговое изображение
+        saveImage(outputImage, "photos/client_avatar.jpg");
+    }
+
+    private static BufferedImage loadImage(String path) {
+        try {
+            return ImageIO.read(new File(path));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private static void saveImage(BufferedImage image, String path) {
+        try {
+            ImageIO.write(image, "jpg", new File(path));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    
 }
 
 class ServiceInfo{
@@ -416,5 +697,5 @@ class EmployeeInfo{
     String employee_name;
     String employee_exp;
     double employee_salary;
-    String employee_type;
+    String employee_services_id_set;
 }

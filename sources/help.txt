@@ -4,16 +4,26 @@ create table BOOKING(Booking_ID int primary key auto_increment, Service_ID int, 
 
 create table PRICE_LIST(Service_ID int primary key auto_increment, Service_NAME TEXT, Service_PRICE double, Service_DESCRIPTION TEXT, Service_TIME TIME);
 
-create table EMPLOYEES(Employee_ID int primary key auto_increment, Employee_NAME TEXT, Employee_EXP TEXT, Employee_SALARY double, Employee_TYPE TEXT);
+create table EMPLOYEES(Employee_ID int primary key auto_increment, Employee_NAME TEXT, Employee_EXP TEXT, Employee_SALARY double, Employee_ServicesIDSet TEXT);
+
+create table WORK_DAYS(Date date, Employee_ID int, Time_START time, Time_FINISH time, Timetable text);
+
+
+
+
+
 
 INSERT INTO BOOKING (Service_ID, Client_ID, Booking_DATETIME, Booking_EMPLOYEEID, Booking_STATUS, Admin_comment) Values (1, 1, '20251010101010', 1, 1, 'лол');
 
 INSERT INTO PRICE_LIST (Service_NAME, Service_PRICE, Service_DESCRIPTION, Service_TIME) Values ('Маникюр лак', 1500.00, 'Маникюр лаком', '02:00:00');
 
-INSERT INTO EMPLOYEES (Employee_NAME, Employee_EXP, Employee_SALARY, Employee_TYPE) Values ('Ануфриева Вероника Владиславовна', '5 лет стажа мастера по ногтям', 100000.00, 'Мастер');
+INSERT INTO EMPLOYEES (Employee_NAME, Employee_EXP, Employee_SALARY, Employee_ServicesIDSet) Values ('Ануфриева Вероника Владиславовна', '5 лет стажа мастера по ногтям', 100000.00, "1");
 
+INSERT INTO EMPLOYEES (Employee_NAME, Employee_EXP, Employee_SALARY, Employee_ServicesIDSet) Values ('Курылин Илья Артемович', '5 лет стажа мастера по ногтям', 100000.00, "1");
 
+INSERT INTO WORK_DAYS (Date, Employee_ID, Time_START, Time_FINISH, Timetable) Values ('20241008', 2, '09:00:00', '21:00:00', '111111111111111111111111');
 
+INSERT INTO WORK_DAYS (Date, Employee_ID, Time_START, Time_FINISH, Timetable) Values ('20251008', 2, '09:00:00', '21:00:00', '111111111111111111111111');
 
 
 mysql -h 46.138.162.233 -P 3306 -u client -p

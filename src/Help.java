@@ -1,62 +1,76 @@
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.*;
-import javafx.scene.control.Alert.AlertType;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
-import javafx.scene.layout.*;
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.Scanner;
 
-import java.util.*;
-public class Help extends Application {
-    private int numButtons;
-
+public class Help {
     public static void main(String[] args) {
-        launch(args);
-    }
-
-    @Override
-    public void start(Stage primaryStage) {
-        numButtons = getUserInput();  // Получить количество кнопок от пользователя
-
-        primaryStage.setTitle("Main Page");
-        VBox vbox = new VBox();
-
-        for (int i = 1; i <= numButtons; i++) {
-            Button button = new Button("Button " + i);
-            int pageNumber = i;
-            button.setOnAction(e -> openPage(primaryStage, pageNumber));
-            vbox.getChildren().add(button);
+        Scanner scanner = new Scanner(System.in);
+        
+        // Считываем ФИО
+        System.out.print("Введите ваше ФИО: ");
+        String fullName = scanner.nextLine();
+        
+        // Получаем инициалы
+        String initials = getInitials(fullName);
+        
+        // Загружаем фоновое изображение
+        BufferedImage background = loadImage("photos/background.jpg");
+        if (background == null) {
+            System.out.println("Ошибка загрузки фонового изображения.");
+            return;
         }
 
-        Scene scene = new Scene(vbox, 300, 250);
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        // Создаем новое изображение с фоном
+        BufferedImage outputImage = new BufferedImage(background.getWidth(), background.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = outputImage.createGraphics();
+        
+        // Рисуем фоновое изображение
+        g.drawImage(background, 0, 0, null);
+        
+        // Устанавливаем шрифт и цвет для инициалов
+        g.setFont(new Font("Arial", Font.BOLD, 100));
+        g.setColor(Color.WHITE); // Цвет текста (можно изменить)
+        
+        // Вычисляем размеры текста и его положение
+        FontMetrics fm = g.getFontMetrics();
+        int x = (outputImage.getWidth() - fm.stringWidth(initials)) / 2; // Центрируем по X
+        int y = (outputImage.getHeight() - fm.getHeight()) / 2 + fm.getAscent(); // Центрируем по Y
+
+        // Рисуем инициалы на изображении
+        g.drawString(initials, x, y);
+        
+        // Освобождаем ресурсы графики
+        g.dispose();
+
+        // Сохраняем итоговое изображение
+        saveImage(outputImage, "photos/output.jpg");
+        
+        System.out.println("Изображение успешно создано: output.jpg");
     }
 
-    private void openPage(Stage stage, int pageNumber) {
-        Label label = new Label("Label " + pageNumber);
-        StackPane stackPane = new StackPane();
-        stackPane.getChildren().add(label);
-
-        Scene scene = new Scene(stackPane, 300, 250);
-        stage.setScene(scene);
-        stage.show();
+    private static String getInitials(String fullName) {
+        String[] parts = fullName.trim().split("\\s+");
+        if (parts.length < 2) return "";
+        return parts[0].charAt(0) + "" + parts[1].charAt(0); // Первые буквы имени и фамилии
     }
 
-    private int getUserInput() {
-        Alert alert = new Alert(AlertType.CONFIRMATION);
-        alert.setTitle("Input Required");
-        alert.setHeaderText("Enter the number of buttons:");
-        alert.setContentText("Number of buttons:");
+    private static BufferedImage loadImage(String path) {
+        try {
+            return ImageIO.read(new File(path));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
-        Optional<ButtonType> option = alert.showAndWait();
-        if (option.get() == null || option.get() == ButtonType.CANCEL){
-            return 0;
+    private static void saveImage(BufferedImage image, String path) {
+        try {
+            ImageIO.write(image, "jpg", new File(path));
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        else if (option.get() == ButtonType.OK){
-            return 1;
-        }
-        return 2;
     }
 }
