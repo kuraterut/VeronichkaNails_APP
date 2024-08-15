@@ -7,7 +7,7 @@ Path_to_javaFX = /home/kuraterut/Desktop/HSE/my_projects/JavaProjects/javafx-sdk
 JDBC_DRIVER = ./sources/mysql-connector-java-9.0.0.jar
 Main_class = Main
 Bin_dir = ./bin
-Files = src/Main.java src/DB.java
+Files = src/Main.java src/DB.java src/HelpFuncs.java
 
 
 

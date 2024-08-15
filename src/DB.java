@@ -30,11 +30,10 @@ enum VerifyClientCodes{
 }
 
 public class DB {
-    int connection_code; //0-не подключался; 1-спешно подключено; 2-ошибка подключения
-    Connection db_conn;
+    Connection connection;
+    
     public DB(){
-        this.connection_code = 0;
-        this.db_conn = null;
+        this.connection = null;
     }
 
     public void getConnection() throws SQLException, IOException{
@@ -46,23 +45,20 @@ public class DB {
         String username = props.getProperty("username");
         String password = props.getProperty("password");
         try {
-            this.db_conn = DriverManager.getConnection(url, username, password);
-            this.connection_code = 1;
+            this.connection = DriverManager.getConnection(url, username, password);
             System.out.println("Connection to VeronichkaNailsApp DB succesfull!");
         } 
         catch(Exception ex){
-            this.connection_code = 2;
-
             System.out.println("Connection to VeronichkaNailsApp failed...");
             System.out.println(ex);
-            this.db_conn = null;
+            this.connection = null;
         }
     }
 
     public VerifyClientCodes verifyClientInDB(String login, String password){ // 0-успешно; 1-нет человека; 2-пароль не тот; 3-ошибка получения данных
         try{
             String sqlST = "SELECT * FROM CLIENTS WHERE Client_EMAIL = ? OR Client_PHONE = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setString(1, login);
             prep_statement.setString(2, login);
             ResultSet res = prep_statement.executeQuery();
@@ -109,7 +105,7 @@ public class DB {
             ////////////////////////////////////////
             ////////CHECKING BIRTHDAY DATE//////////
             ////////////////////////////////////////
-            Statement statement = this.db_conn.createStatement();
+            Statement statement = this.connection.createStatement();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
             ResultSet date_now_res = statement.executeQuery("SELECT CURDATE()");
             date_now_res.next();
@@ -141,7 +137,7 @@ public class DB {
             if (psw.length() < 8 || psw.length() > 20){return InsertClientCodes.PSW_ERR;}
 
             String sql = "INSERT INTO CLIENTS (Client_EMAIL, Client_PSW, Client_PHONE, Client_NAME, Client_NICK, Client_BIRTH, Admin_comment) Values (?, ?, ?, ?, ?, ?, ?)";
-            PreparedStatement preparedStatement = this.db_conn.prepareStatement(sql);
+            PreparedStatement preparedStatement = this.connection.prepareStatement(sql);
             preparedStatement.setString(1, email);
             preparedStatement.setString(2, psw);
             preparedStatement.setString(3, phone);
@@ -161,26 +157,12 @@ public class DB {
         
     }
 
-    public String getNickname(String login){
-        try{
-            String sqlST = "SELECT * FROM CLIENTS WHERE Client_EMAIL = ? OR Client_PHONE = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
-            prep_statement.setString(1, login);
-            prep_statement.setString(2, login);
-            ResultSet res = prep_statement.executeQuery();
-            res.next();
-            return res.getString("Client_NICK");
-        }
-        catch(Exception ex){
-            System.out.println(ex);
-            return "";            
-        }
-    }
+    
 
     public BookingInfo getBookingInfoById(int id){
         try{
             String sqlST = "SELECT * FROM BOOKING WHERE Booking_ID = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setInt(1, id);
             
             ResultSet res = prep_statement.executeQuery();
@@ -210,7 +192,7 @@ public class DB {
     public ArrayList<BookingInfo> getBookingInfoByClientId(int client_id){
         try{
             String sqlST = "SELECT * FROM BOOKING WHERE Client_ID = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setInt(1, client_id);
             
             ResultSet res = prep_statement.executeQuery();
@@ -240,7 +222,7 @@ public class DB {
     public ServiceInfo getServiceInfoById(int service_id){
         try{
             String sqlST = "SELECT * FROM PRICE_LIST WHERE Service_ID = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setInt(1, service_id);
             ResultSet res = prep_statement.executeQuery();
             res.next();
@@ -262,7 +244,7 @@ public class DB {
     public ArrayList<ServiceInfo> getServiceInfo(){
         try{
             String sqlST = "SELECT * FROM PRICE_LIST";
-            Statement statement = this.db_conn.createStatement();
+            Statement statement = this.connection.createStatement();
             ResultSet res = statement.executeQuery(sqlST);
 
 
@@ -291,7 +273,7 @@ public class DB {
     public ClientInfo getClientInfoById(int client_id){
         try{
             String sqlST = "SELECT * FROM CLIENTS WHERE Client_ID = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setInt(1, client_id);
             ResultSet res = prep_statement.executeQuery();
             res.next();
@@ -317,7 +299,7 @@ public class DB {
     public ClientInfo getClientInfoByLogin(String login){
         try{
             String sqlST = "SELECT * FROM CLIENTS WHERE Client_EMAIL = ? OR Client_PHONE = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setString(1, login);
             prep_statement.setString(2, login);
             ResultSet res = prep_statement.executeQuery();
@@ -343,7 +325,7 @@ public class DB {
     public EmployeeInfo getEmployeeInfoById(int employee_id){
         try{
             String sqlST = "SELECT * FROM EMPLOYEES WHERE Employee_ID = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setInt(1, employee_id);
             ResultSet res = prep_statement.executeQuery();
             res.next();
@@ -372,12 +354,12 @@ public class DB {
 
 
             String sqlST = "DELETE FROM BOOKING WHERE Booking_ID = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setInt(1, id);
             int rows = prep_statement.executeUpdate();
 
             sqlST = "SELECT * FROM WORK_DAYS WHERE Employee_ID = ? AND Date = ?";
-            prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setInt(1, booking.employee_id);
             prep_statement.setString(2, booking.booking_datetime.split(" ")[0].replace("-", ""));
             ResultSet res = prep_statement.executeQuery();
@@ -406,7 +388,7 @@ public class DB {
             String new_timetable = cur_timetable.substring(0, cells_from_start)+"1".repeat(service_cell_count)+cur_timetable.substring(cells_from_start+service_cell_count, cur_timetable.length());
             
             sqlST = "UPDATE WORK_DAYS SET Timetable = ? WHERE Employee_ID = ? AND Date = ?";
-            prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setString(1, new_timetable);
             prep_statement.setInt(2, booking.employee_id);
             prep_statement.setString(3, booking.booking_datetime.split(" ")[0].replace("-", ""));
@@ -415,7 +397,7 @@ public class DB {
             // System.out.println(new_timetable);
 
             // sqlST = "UPDATE WORK_DAYS SET Timetable = ? WHERE Employee_ID = ? AND Date = ?";
-            // prep_statement = this.db_conn.prepareStatement(sqlST);
+            // prep_statement = this.connection.prepareStatement(sqlST);
             // prep_statement.setString(1, new_timetable);
             // prep_statement.setInt(2, employee_id);
             // prep_statement.setString(3, date.replace("-", ""));
@@ -438,7 +420,7 @@ public class DB {
     public void updateBookingTableByClientId(int id){
         try{
             ArrayList<BookingInfo> booking_info = this.getBookingInfoByClientId(id);
-            Statement statement = this.db_conn.createStatement();
+            Statement statement = this.connection.createStatement();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             ResultSet datetime_now_res = statement.executeQuery("SELECT NOW()");
             datetime_now_res.next();
@@ -462,7 +444,7 @@ public class DB {
     public void changeBookingStatusById(int id, int status){
         try{
             String sqlST = "UPDATE BOOKING SET Booking_STATUS = 0 WHERE Booking_ID = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setInt(1, id);
             int rows = prep_statement.executeUpdate();
         }
@@ -474,7 +456,7 @@ public class DB {
     public ArrayList<String> getFreeTimeInfo(String date, int employee_id, int service_id){
         try{
             String sqlST = "SELECT * FROM WORK_DAYS WHERE Date = ? AND Employee_ID = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setString(1, date.replace("-", ""));
             prep_statement.setInt(2, employee_id);
             ResultSet res = prep_statement.executeQuery();
@@ -515,7 +497,7 @@ public class DB {
     public ArrayList<Integer> getAllEmployeesIdWhoHaveService(int service_id){
         try{
             String sqlST = "SELECT * FROM EMPLOYEES";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             ResultSet res = prep_statement.executeQuery();
             ArrayList<Integer> ans = new ArrayList<Integer>();
             while(res.next()){
@@ -540,7 +522,7 @@ public class DB {
             int service_cell_count = (60*Integer.parseInt(service_time.substring(0, 2))+Integer.parseInt(service_time.substring(3, 5)))/30;
             
             String sqlST = "SELECT * FROM WORK_DAYS WHERE Date = ? AND Employee_ID = ?";
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setString(1, date.replace("-", ""));
             prep_statement.setInt(2, employee_id);
             ResultSet res = prep_statement.executeQuery();
@@ -564,7 +546,7 @@ public class DB {
             String new_timetable = cur_timetable.substring(0, cells_from_start)+"0".repeat(service_cell_count)+cur_timetable.substring(cells_from_start+service_cell_count, cur_timetable.length());
             
             sqlST = "UPDATE WORK_DAYS SET Timetable = ? WHERE Employee_ID = ? AND Date = ?";
-            prep_statement = this.db_conn.prepareStatement(sqlST);
+            prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setString(1, new_timetable);
             prep_statement.setInt(2, employee_id);
             prep_statement.setString(3, date.replace("-", ""));
@@ -583,7 +565,7 @@ public class DB {
             String final_datetime = date.replace("-", "") + time.replace(":", "")+"00";
 
             String sqlST = "INSERT INTO BOOKING (Service_ID, Client_ID, Booking_DATETIME, Booking_EMPLOYEEID, Booking_STATUS, Admin_comment) Values (?, ?, ?, ?, ?, ?);";;
-            PreparedStatement prep_statement = this.db_conn.prepareStatement(sqlST);
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setInt(1, service_id);
             prep_statement.setInt(2, client_id);
             prep_statement.setString(3, final_datetime);
