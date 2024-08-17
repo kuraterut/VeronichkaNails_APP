@@ -144,13 +144,14 @@ public class HelpFuncs extends Main{
         final_statement+="Услуга: "+service_name+"\n";
         final_statement+="Мастер: "+employee_name+"\n";
         final_statement+="Дата: "+final_date+"\n";
-        final_statement+="Время: "+final_time+"\n";
+        final_statement+="Время: "+final_time+"\n\n";
+        final_statement+="Подтвердите запись.";
 
 
         Alert alert = new Alert(AlertType.CONFIRMATION);
         alert.setTitle("Подтверждение");
         alert.setHeaderText(final_statement);
-        alert.setContentText("Вы уверены, что хотите записаться?");
+        alert.setContentText("Вы уверены?");
 
         Optional<ButtonType> option = alert.showAndWait();
         if (option.get() == null || option.get() == ButtonType.CANCEL){
@@ -161,12 +162,32 @@ public class HelpFuncs extends Main{
         }
     }
 
-    public static int confirmBooking(){
-        Alert alert         = new Alert(AlertType.CONFIRMATION);
+
+    public static void bookingWarning(){
+    	Alert alert = new Alert(AlertType.WARNING);
+        String statement = "У вас более 3-х текущих записей. Для следующих записей необходимо обратиться к администратору.\n";
+        statement+="Приносим свои извинения за неудобства.";
+
+        alert.setTitle("Предупреждение");
+        alert.setHeaderText(statement);
+        alert.showAndWait();
+    }
+
+    public static int confirmBooking(int service_id, DB database){
+    	ServiceInfo service = database.getServiceInfoById(service_id);
+
+    	String final_statement = "";
+        final_statement+="Услуга: "+service.service_name+"\n";
+        final_statement+="Стоимость: "+service.service_price+"\n";
+        final_statement+="Время: "+HelpFuncs.parseTime(service.service_time)+"\n\n";
+        final_statement+="Подтвердите выбор услуги.";
+
+
+        Alert alert = new Alert(AlertType.CONFIRMATION);
         
         alert.setTitle("Подтверждение");
-        alert.setHeaderText("Нажмите ОК, если подтверждаете запись, Cancel в ином случае");
-        alert.setContentText("Вы уверены, что хотите записаться?");
+        alert.setHeaderText(final_statement);
+        alert.setContentText("Вы уверены?");
 
         Optional<ButtonType> option = alert.showAndWait();
         if (option.get() == null || option.get() == ButtonType.CANCEL){
@@ -177,11 +198,53 @@ public class HelpFuncs extends Main{
         }
     }
 
-    public static int confirmDeleteBookingDialog(){
+    public static int confirmDeleteBookingDialog(int booking_id, DB database){
+    	BookingInfo booking = database.getBookingInfoById(booking_id);
+
+    	String employee_name = database.getEmployeeInfoById(booking.employee_id).employee_name;
+        String service_name = database.getServiceInfoById(booking.service_id).service_name;
+        String final_date = HelpFuncs.parseDate(booking.booking_datetime.split(" ")[0]);
+        String final_time = HelpFuncs.parseTime(booking.booking_datetime.split(" ")[1]);
+
+        String final_statement = "";
+        final_statement+="Услуга: "+service_name+"\n";
+        final_statement+="Мастер: "+employee_name+"\n";
+        final_statement+="Дата: "+final_date+"\n";
+        final_statement+="Время: "+final_time+"\n\n";
+        final_statement+="Запись будет удалена.";
+
         Alert alert = new Alert(AlertType.CONFIRMATION);
         alert.setTitle("Подтверждение");
-        alert.setHeaderText("Нажмите ОК, если подтверждаете, Cancel в ином случае");
-        alert.setContentText("Подтвердите");
+        alert.setHeaderText(final_statement);
+        alert.setContentText("Вы уверены?");
+
+        Optional<ButtonType> option = alert.showAndWait();
+        if (option.get() == null || option.get() == ButtonType.CANCEL){
+            return 0;
+        }
+        else {
+            return 1;
+        }
+    }
+
+    public static int confirmReBookingDialog(BookingInfo booking, DB database){
+    	String employee_name = database.getEmployeeInfoById(booking.employee_id).employee_name;
+        String service_name = database.getServiceInfoById(booking.service_id).service_name;
+        String final_date = HelpFuncs.parseDate(booking.booking_datetime.split(" ")[0]);
+        String final_time = HelpFuncs.parseTime(booking.booking_datetime.split(" ")[1]);
+
+        String final_statement = "";
+        final_statement+="Услуга: "+service_name+"\n";
+        final_statement+="Мастер: "+employee_name+"\n";
+        final_statement+="Дата: "+final_date+"\n";
+        final_statement+="Время: "+final_time+"\n\n";
+        final_statement+="Запись будет удалена. Вы будете направлены на страницу выбора даты.";
+
+
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle("Подтверждение");
+        alert.setHeaderText(final_statement);
+        alert.setContentText("Вы уверены?");
 
         Optional<ButtonType> option = alert.showAndWait();
         if (option.get() == null || option.get() == ButtonType.CANCEL){

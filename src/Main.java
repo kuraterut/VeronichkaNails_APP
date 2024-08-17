@@ -376,13 +376,7 @@ public class Main extends Application{
             }
 
             if (!is_empty){
-                javafx.scene.control.ScrollPane scroll_table = new javafx.scene.control.ScrollPane(table);
-                scroll_table.setPrefViewportHeight(150);
-                scroll_table.setFitToHeight(true);
-                scroll_table.setFitToWidth(true);
-                
-
-                root.getChildren().addAll(head_booking_lbl, scroll_table);
+                root.getChildren().addAll(head_booking_lbl, table);
             }
             else{
                 root.getChildren().addAll(head_booking_lbl, no_booking);
@@ -466,8 +460,29 @@ public class Main extends Application{
         
         if (need_btn_cancel == 1){
             escape_btn.setOnAction(event->HelpFuncs.loadMainWindowFunc(escape_btn, this));
-            transfer_btn.setOnAction(event->HelpFuncs.loadChooseEmployeeWindowFunc(transfer_btn, this, service_info.service_id));
             
+
+            Main cur = this;
+            transfer_btn.setOnAction(new EventHandler<ActionEvent>() {
+                @Override
+                public void handle(ActionEvent event) {
+                    int confirmation_code = HelpFuncs.confirmReBookingDialog(booking_info, database);  
+                    if(confirmation_code == 1){
+                        int deleting_code = database.deleteBookingById(booking_info.booking_id);
+            
+                        if (deleting_code == 1){
+                            HelpFuncs.loadChooseEmployeeWindowFunc(transfer_btn, cur, booking_info.service_id);
+                        }
+                        else{
+                            createInfoOfDeletingBookingDialog(deleting_code);
+                        }
+                    }
+                }
+            });
+            
+            
+
+
             btns.getChildren().addAll(cancel_btn, transfer_btn, escape_btn);
         }
         else{
@@ -480,13 +495,14 @@ public class Main extends Application{
         
         cancel_btn.setOnAction(event -> cancelBookingBtnAction(booking_info.booking_id, cancel_btn));
 
+
         root.getChildren().addAll(head_booking_info, table_booking, head_employee_info, table_employee, btns);
 
         return root;
     }
 
     public void cancelBookingBtnAction(int booking_id, Button btn){
-        int alert_code = HelpFuncs.confirmDeleteBookingDialog();
+        int alert_code = HelpFuncs.confirmDeleteBookingDialog(booking_id, database);
         
         if(alert_code == 1){
             int deleting_code = database.deleteBookingById(booking_id);
@@ -620,9 +636,30 @@ public class Main extends Application{
         root.setLeft(menu);
         root.setRight(right_box);
         
+        // btn_booking.setOnAction(event->HelpFuncs.loadBookingWindowFunc(btn_booking, this));
+        Main cur = this;
+        btn_booking.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                ArrayList<BookingInfo> booking_list = database.getBookingInfoByClientId(client_info.client_id);
+                int num_real_bookings = 0;
+                for (int i = 0; i < booking_list.size(); i++){
+                    if(booking_list.get(i).booking_status == 1){
+                        num_real_bookings++;
+                    }
+                }
+                if (num_real_bookings >= 3){
+                    HelpFuncs.bookingWarning();
+                }
+                else{
+                    HelpFuncs.loadBookingWindowFunc(btn_booking, cur);
+                }
+            }
+        });
+
+
         toggleButton.setOnAction(event -> toggleMenu(sideMenu));
-        btn_booking.setOnAction(event->HelpFuncs.loadBookingWindowFunc(btn_booking, this));
-        btn_history.setOnAction(event->HelpFuncs.loadHistoryWindowFunc(btn_booking, this));
+        btn_history.setOnAction(event->HelpFuncs.loadHistoryWindowFunc(btn_history, this));
         exit_btn.setOnAction(event->HelpFuncs.loadAuthorizationWindowFunc(exit_btn, this));
         side_menu_btn4.setOnAction(event->HelpFuncs.loadSettingsWindowFunc(side_menu_btn4, this));
         side_menu_btn1.setOnAction(event->new Thread(() -> HelpFuncs.openLink(about_url)).start());
@@ -707,7 +744,7 @@ public class Main extends Application{
     }
 
     public void btnBookingAction(Button btn_booking, int service_id){
-        int confirmation_code = HelpFuncs.confirmBooking();
+        int confirmation_code = HelpFuncs.confirmBooking(service_id, database);
         if (confirmation_code == 1){
             HelpFuncs.loadChooseEmployeeWindowFunc(btn_booking, this, service_id);
         }
