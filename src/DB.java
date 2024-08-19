@@ -55,12 +55,14 @@ public class DB {
         }
     }
 
-    public VerifyClientCodes verifyClientInDB(String login, String password){ // 0-успешно; 1-нет человека; 2-пароль не тот; 3-ошибка получения данных
+    public VerifyClientCodes verifyClientInDB(int id, String login, String password){ // 0-успешно; 1-нет человека; 2-пароль не тот; 3-ошибка получения данных
         try{
-            String sqlST = "SELECT * FROM CLIENTS WHERE Client_EMAIL = ? OR Client_PHONE = ?";
+            String sqlST = "SELECT * FROM CLIENTS WHERE (Client_EMAIL = ? OR Client_PHONE = ? OR Client_PHONE = ?) AND Client_ID != ? ";
             PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setString(1, login);
             prep_statement.setString(2, login);
+            prep_statement.setString(3, "+7"+login.substring(1));
+            prep_statement.setInt(4, id);
             ResultSet res = prep_statement.executeQuery();
             if(res.next() == false){
                 return VerifyClientCodes.NO_LOGIN;
@@ -80,71 +82,23 @@ public class DB {
         }
     }
 
-    public InsertClientCodes insertNewClient(String fio, String nickname, String email, String phone, String birth, String psw){
+    public InsertClientCodes insertNewClient(ClientInfo client){
         // 0-успешно добавлени, 1-такой уже есть, 2-ошибка, 3-ошибка др, 4-ошибка почты, 5-ошибка телефона, 6-ошибка пароля, 7-не все поля заполнены
         try{
-            ////////////////////////////////////////
-            //////CHECKING FILLING ALL FIELDS///////
-            ////////////////////////////////////////
-            if (fio.length()==0 || nickname.length()==0 || email.length()==0 || phone.length()==0 || psw.length()==0){
-                return InsertClientCodes.FILL_FIELD;
-            }
+            InsertClientCodes checking_code = checkClientInfo(client);
+            if (checking_code != InsertClientCodes.SUCCESS){return checking_code;}
+            if (client.client_phone.startsWith("8")){client.client_phone = "+7"+client.client_phone.substring(1);}
 
-            ////////////////////////////////////////
-            //////CHECKING ALREADY IN BASE//////////
-            ////////////////////////////////////////
-            VerifyClientCodes verify_code_email = this.verifyClientInDB(email, psw);
-            VerifyClientCodes verify_code_phone = this.verifyClientInDB(phone, psw);
-            if( verify_code_email == VerifyClientCodes.SUCCESS || 
-            	verify_code_phone == VerifyClientCodes.SUCCESS || 
-            	verify_code_email == VerifyClientCodes.PSW_INC || 
-            	verify_code_phone == VerifyClientCodes.PSW_INC	 ) {return InsertClientCodes.IN_BASE;}
-            
-
-
-            ////////////////////////////////////////
-            ////////CHECKING BIRTHDAY DATE//////////
-            ////////////////////////////////////////
-            Statement statement = this.connection.createStatement();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            ResultSet date_now_res = statement.executeQuery("SELECT CURDATE()");
-            date_now_res.next();
-            LocalDate date_now = LocalDate.parse(date_now_res.getString(1), formatter);
-            LocalDate date_birth = LocalDate.parse(birth, formatter);
-            Period period = Period.between(date_birth, date_now);
-
-
-            if (period.getYears() < 1 || birth.indexOf("-") != 4 || birth.lastIndexOf("-") != 7 || birth.length() != 10 || period.getYears() > 150){System.out.println(birth);return InsertClientCodes.BIRTH_ERR;}
-            
-
-
-            ////////////////////////////////////////
-            /////////////CHECKING EMAIL/////////////
-            ////////////////////////////////////////
-            if (email.indexOf("@") == -1 || email.length() > 50){return InsertClientCodes.EMAIL_ERR;}
-
-            ////////////////////////////////////////
-            /////////////CHECKING PHONE/////////////
-            ////////////////////////////////////////
-            try{long k = Long.parseLong(phone.substring(1));}
-            catch(Exception ex){return InsertClientCodes.PHONE_ERR;}
-            if (phone.startsWith("+7") == false || phone.length() != 12){return InsertClientCodes.PHONE_ERR;}
-
-
-            ////////////////////////////////////////
-            /////////////CHECKING PSW///////////////
-            ////////////////////////////////////////
-            if (psw.length() < 8 || psw.length() > 20){return InsertClientCodes.PSW_ERR;}
-
-            String sql = "INSERT INTO CLIENTS (Client_EMAIL, Client_PSW, Client_PHONE, Client_NAME, Client_NICK, Client_BIRTH, Admin_comment) Values (?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO CLIENTS (Client_EMAIL, Client_PSW, Client_PHONE, Client_NAME, Client_NICK, Client_BIRTH, Client_VISITS, Admin_comment) Values (?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement preparedStatement = this.connection.prepareStatement(sql);
-            preparedStatement.setString(1, email);
-            preparedStatement.setString(2, psw);
-            preparedStatement.setString(3, phone);
-            preparedStatement.setString(4, fio);
-            preparedStatement.setString(5, nickname);
-            preparedStatement.setString(6, birth);
-            preparedStatement.setString(7, "Nothing");
+            preparedStatement.setString(1, client.client_email);
+            preparedStatement.setString(2, client.client_psw);
+            preparedStatement.setString(3, client.client_phone);
+            preparedStatement.setString(4, client.client_name);
+            preparedStatement.setString(5, client.client_nickname);
+            preparedStatement.setString(6, client.client_birthday);
+            preparedStatement.setInt(7, 0);
+            preparedStatement.setString(8, "Nothing");
             
             int rows = preparedStatement.executeUpdate();
             if (rows == 0){return InsertClientCodes.DATABASE_CONN_ERR;}
@@ -157,6 +111,94 @@ public class DB {
         
     }
 
+    public InsertClientCodes updateClientInfo(ClientInfo client){
+        try{
+            InsertClientCodes checking_code = checkClientInfo(client);
+            if(checking_code != InsertClientCodes.SUCCESS){return checking_code;}
+            if (client.client_phone.startsWith("8")){client.client_phone = "+7"+client.client_phone.substring(1);}
+            String sql0 = "UPDATE CLIENTS SET ";
+            String sql1 = "Client_EMAIL=?, Client_PSW=?, Client_PHONE=?, Client_NAME=?, Client_NICK=?, Client_BIRTH=? WHERE Client_ID = ?";
+            PreparedStatement preparedStatement = this.connection.prepareStatement(sql0+sql1);
+            preparedStatement.setString(1, client.client_email);
+            preparedStatement.setString(2, client.client_psw);
+            preparedStatement.setString(3, client.client_phone);
+            preparedStatement.setString(4, client.client_name);
+            preparedStatement.setString(5, client.client_nickname);
+            preparedStatement.setString(6, client.client_birthday);
+            preparedStatement.setInt(7, client.client_id);
+            int rows = preparedStatement.executeUpdate();
+            if (rows == 0){return InsertClientCodes.DATABASE_CONN_ERR;}
+            else{return InsertClientCodes.SUCCESS;}
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return InsertClientCodes.DATABASE_CONN_ERR;
+        }
+    }
+
+    public InsertClientCodes checkClientInfo(ClientInfo client){
+        try{
+            ////////////////////////////////////////
+            //////CHECKING FILLING ALL FIELDS///////
+            ////////////////////////////////////////
+            if (client.client_name.length()==0 || client.client_nickname.length()==0 || client.client_email.length()==0 || client.client_phone.length()==0 || client.client_psw.length()==0){
+                return InsertClientCodes.FILL_FIELD;
+            }
+
+            ////////////////////////////////////////
+            //////CHECKING ALREADY IN BASE//////////
+            ////////////////////////////////////////
+            VerifyClientCodes verify_code_email = this.verifyClientInDB(client.client_id, client.client_email, client.client_psw);
+            VerifyClientCodes verify_code_phone = this.verifyClientInDB(client.client_id, client.client_phone, client.client_psw);
+            if( verify_code_email == VerifyClientCodes.SUCCESS || 
+                verify_code_phone == VerifyClientCodes.SUCCESS || 
+                verify_code_email == VerifyClientCodes.PSW_INC || 
+                verify_code_phone == VerifyClientCodes.PSW_INC   ) {return InsertClientCodes.IN_BASE;}
+            
+
+
+            ////////////////////////////////////////
+            ////////CHECKING BIRTHDAY DATE//////////
+            ////////////////////////////////////////
+            Statement statement = this.connection.createStatement();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            ResultSet date_now_res = statement.executeQuery("SELECT CURDATE()");
+            date_now_res.next();
+            LocalDate date_now = LocalDate.parse(date_now_res.getString(1), formatter);
+            LocalDate date_birth = LocalDate.parse(client.client_birthday, formatter);
+            Period period = Period.between(date_birth, date_now);
+
+
+            if (period.getYears() < 1 || client.client_birthday.indexOf("-") != 4 || client.client_birthday.lastIndexOf("-") != 7 || client.client_birthday.length() != 10 || period.getYears() > 150){System.out.println(client.client_birthday);return InsertClientCodes.BIRTH_ERR;}
+            
+
+
+            ////////////////////////////////////////
+            /////////////CHECKING EMAIL/////////////
+            ////////////////////////////////////////
+            if (client.client_email.indexOf("@") == -1 || client.client_email.length() > 50){return InsertClientCodes.EMAIL_ERR;}
+
+            ////////////////////////////////////////
+            /////////////CHECKING PHONE/////////////
+            ////////////////////////////////////////
+            try{long k = Long.parseLong(client.client_phone.substring(1));}
+            catch(Exception ex){return InsertClientCodes.PHONE_ERR;}
+            boolean phone_expr1 = client.client_phone.startsWith("+7") && client.client_phone.length() == 12;
+            boolean phone_expr2 = client.client_phone.startsWith("8") && client.client_phone.length() == 11;
+            if ((phone_expr1||phone_expr2) == false){return InsertClientCodes.PHONE_ERR;}
+
+
+            ////////////////////////////////////////
+            /////////////CHECKING PSW///////////////
+            ////////////////////////////////////////
+            if (client.client_psw.length() < 8 || client.client_psw.length() > 20){return InsertClientCodes.PSW_ERR;}
+            return InsertClientCodes.SUCCESS;
+        }
+        catch (Exception ex) {
+            System.out.println(ex);
+            return InsertClientCodes.DATABASE_CONN_ERR;
+        }
+    }
     
 
     public BookingInfo getBookingInfoById(int id){
@@ -285,6 +327,7 @@ public class DB {
             client.client_name = res.getString("Client_NAME");
             client.client_nickname = res.getString("Client_NICK");
             client.client_birthday = res.getString("Client_BIRTH");
+            client.client_visits = res.getInt("Client_VISITS");
             client.admin_comment = res.getString("Admin_comment");
             
 
@@ -298,10 +341,11 @@ public class DB {
 
     public ClientInfo getClientInfoByLogin(String login){
         try{
-            String sqlST = "SELECT * FROM CLIENTS WHERE Client_EMAIL = ? OR Client_PHONE = ?";
+            String sqlST = "SELECT * FROM CLIENTS WHERE Client_EMAIL = ? OR Client_PHONE = ? OR Client_PHONE = ?";
             PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
             prep_statement.setString(1, login);
             prep_statement.setString(2, login);
+            prep_statement.setString(3, "+7"+login.substring(1));
             ResultSet res = prep_statement.executeQuery();
 
             res.next();
@@ -347,16 +391,19 @@ public class DB {
 
 //заменить на cancelBookingById()
 
-    public int deleteBookingById(int id){
+    public int cancelBookingById(int id){
         try{
             BookingInfo booking = getBookingInfoById(id);
             ServiceInfo service = getServiceInfoById(booking.service_id);
 
+            String sqlST;
+            PreparedStatement prep_statement;
+            // String sqlST = "DELETE FROM BOOKING WHERE Booking_ID = ?";
+            // PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
+            // prep_statement.setInt(1, id);
+            // int rows = prep_statement.executeUpdate();
 
-            String sqlST = "DELETE FROM BOOKING WHERE Booking_ID = ?";
-            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
-            prep_statement.setInt(1, id);
-            int rows = prep_statement.executeUpdate();
+            this.changeBookingStatusById(id, 2);
 
             sqlST = "SELECT * FROM WORK_DAYS WHERE Employee_ID = ? AND Date = ?";
             prep_statement = this.connection.prepareStatement(sqlST);
@@ -392,22 +439,7 @@ public class DB {
             prep_statement.setString(1, new_timetable);
             prep_statement.setInt(2, booking.employee_id);
             prep_statement.setString(3, booking.booking_datetime.split(" ")[0].replace("-", ""));
-            rows = prep_statement.executeUpdate();
-
-            // System.out.println(new_timetable);
-
-            // sqlST = "UPDATE WORK_DAYS SET Timetable = ? WHERE Employee_ID = ? AND Date = ?";
-            // prep_statement = this.connection.prepareStatement(sqlST);
-            // prep_statement.setString(1, new_timetable);
-            // prep_statement.setInt(2, employee_id);
-            // prep_statement.setString(3, date.replace("-", ""));
-            // int rows = prep_statement.executeUpdate();
-
-
-
-
-
-
+            int rows = prep_statement.executeUpdate();
 
             return rows;
         }
@@ -429,7 +461,7 @@ public class DB {
                 LocalDateTime datetime_cur_booking = LocalDateTime.parse(booking_info.get(i).booking_datetime, formatter);
                 Duration duration = Duration.between(datetime_now, datetime_cur_booking);
                 if (duration.isNegative() && booking_info.get(i).booking_status == 1){
-                    this.changeBookingStatusById(booking_info.get(i).booking_id, 0);
+                    this.changeBookingStatusById(booking_info.get(i).booking_id, 2);
                 }
 
             }
@@ -443,9 +475,10 @@ public class DB {
 
     public void changeBookingStatusById(int id, int status){
         try{
-            String sqlST = "UPDATE BOOKING SET Booking_STATUS = 0 WHERE Booking_ID = ?";
+            String sqlST = "UPDATE BOOKING SET Booking_STATUS = ? WHERE Booking_ID = ?";
             PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
-            prep_statement.setInt(1, id);
+            prep_statement.setInt(1, status);
+            prep_statement.setInt(2, id);
             int rows = prep_statement.executeUpdate();
         }
         catch(Exception ex){
@@ -582,6 +615,29 @@ public class DB {
         }
     }
 
+    public int[] getDiscountsInfo(){
+        try{
+            int[] discount_info = new int[6];
+            String sqlST = "SELECT * FROM DISCOUNTS_INFO";
+            PreparedStatement prep_statement = this.connection.prepareStatement(sqlST);
+            ResultSet res = prep_statement.executeQuery();
+            while(res.next()){
+                discount_info[0] = res.getInt("Discount_min");
+                discount_info[1] = res.getInt("Discount_min_start");
+                discount_info[2] = res.getInt("Discount_mid");
+                discount_info[3] = res.getInt("Discount_mid_start");
+                discount_info[4] = res.getInt("Discount_max");
+                discount_info[5] = res.getInt("Discount_max_start");
+            }
+            return discount_info;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+
+    }
+
 
     public void createClientAvatar(int client_id){
         ClientInfo client = getClientInfoById(client_id);
@@ -660,6 +716,7 @@ class ClientInfo{
     String client_name;
     String client_nickname;
     String client_birthday;
+    int client_visits;
     String admin_comment;
 }
 

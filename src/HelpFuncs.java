@@ -37,6 +37,7 @@ import javafx.scene.shape.Circle;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.geometry.HPos;
+import javafx.geometry.VPos;
 import javafx.geometry.Insets;
 
 
@@ -58,6 +59,7 @@ import java.time.*;
 import java.time.format.*;
 import java.net.*;
 import java.awt.*;
+
 
 
 public class HelpFuncs extends Main{
@@ -97,6 +99,15 @@ public class HelpFuncs extends Main{
 	public static void loadEmployeeInfoWindowFunc(Node node, Main cur, int employee_id, int service_id){
 		node.getScene().setRoot(cur.loadEmployeeInfoWindow(employee_id, service_id));
 	}
+
+	public static void loadLoyaltyWindowFunc(Node node, Main cur){
+		node.getScene().setRoot(cur.loadLoyaltyWindow());
+	}
+
+	public static void loadResetDataWindowFunc(Node node, Main cur){
+		node.getScene().setRoot(cur.loadResetDataWindow());
+	}
+
 
 
 	public static String parseDateTime(String datetime){
@@ -264,6 +275,29 @@ public class HelpFuncs extends Main{
             e.printStackTrace();
         }
     	
+    }
+
+    public static int discountCalc(ClientInfo client, DB database){
+    	int[] discounts_info = database.getDiscountsInfo();
+    	if (discounts_info == null || client.client_visits < discounts_info[1]){
+    		return 0;
+    	}
+    	else if(client.client_visits < discounts_info[3]){
+    		return discounts_info[0];
+    	}
+    	else if(client.client_visits < discounts_info[5]){
+    		return discounts_info[2];
+    	}
+    	else{
+    		return discounts_info[4];
+    	}
+    }
+
+    public static LocalDate strToLocalDate(String date){
+    	int year = Integer.parseInt(date.split("-")[0]);
+    	int month = Integer.parseInt(date.split("-")[1]);
+    	int day = Integer.parseInt(date.split("-")[2]);
+    	return LocalDate.of(year, month, day);
     }
 
 }

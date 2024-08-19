@@ -1,4 +1,4 @@
-create table CLIENTS(Client_ID int primary key auto_increment, Client_EMAIL TEXT, Client_PSW TEXT, Client_PHONE varchar(12), Client_NAME TEXT, Client_NICK TEXT, Client_BIRTH date, Admin_comment TEXT);
+create table CLIENTS(Client_ID int primary key auto_increment, Client_EMAIL TEXT, Client_PSW TEXT, Client_PHONE varchar(12), Client_NAME TEXT, Client_NICK TEXT, Client_BIRTH date, Client_VISITS int, Admin_comment TEXT);
 
 create table BOOKING(Booking_ID int primary key auto_increment, Service_ID int, Client_ID int, Booking_DATETIME datetime, Booking_EMPLOYEEID int, Booking_STATUS int, Admin_comment TEXT);
 
@@ -8,6 +8,7 @@ create table EMPLOYEES(Employee_ID int primary key auto_increment, Employee_NAME
 
 create table WORK_DAYS(Date date, Employee_ID int, Time_START time, Time_FINISH time, Timetable text);
 
+create table DISCOUNTS_INFO(Date_ID int primary key auto_increment, Date date, Discount_min int, Discount_min_start int, Discount_mid int, Discount_mid_start int, Discount_max int, Discount_max_start int);
 
 
 
@@ -24,6 +25,8 @@ INSERT INTO EMPLOYEES (Employee_NAME, Employee_EXP, Employee_SALARY, Employee_Se
 INSERT INTO WORK_DAYS (Date, Employee_ID, Time_START, Time_FINISH, Timetable) Values ('20241008', 2, '09:00:00', '21:00:00', '111111111111111111111111');
 
 INSERT INTO WORK_DAYS (Date, Employee_ID, Time_START, Time_FINISH, Timetable) Values ('20251008', 2, '09:00:00', '21:00:00', '111111111111111111111111');
+
+INSERT INTO DISCOUNTS_INFO (Date, Discount_min, Discount_min_start, Discount_mid, Discount_mid_start, Discount_max, Discount_max_start) VALUES("20240819", 3, 10, 5, 20, 7, 30);
 
 
 mysql -h 46.138.162.233 -P 3306 -u client -p

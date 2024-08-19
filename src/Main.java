@@ -37,6 +37,7 @@ import javafx.scene.shape.Circle;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.geometry.HPos;
+import javafx.geometry.VPos;
 import javafx.geometry.Insets;
 
 
@@ -58,6 +59,8 @@ import java.time.*;
 import java.time.format.*;
 import java.net.*;
 import java.awt.*;
+
+
 
 
  
@@ -97,9 +100,7 @@ public class Main extends Application{
 
     public VBox loadAuthorizationWindow(){
         VBox root                       = new VBox(25);
-        VBox fields_form                = new VBox(30);
-        VBox lbls_form                  = new VBox(40);
-        HBox auth_form                  = new HBox(25);
+        GridPane table                  = new GridPane();
         HBox buttons                    = new HBox(50);
         
         Label head_label                = new Label("АВТОРИЗАЦИЯ");
@@ -114,11 +115,14 @@ public class Main extends Application{
         Button authorization_btn        = new Button("Авторизоваться");
 
         
-        auth_form.setAlignment(Pos.CENTER);
         buttons.setAlignment(Pos.CENTER);
         root.setAlignment(Pos.CENTER);
-
-        login_lbl.setTooltip(new Tooltip("Email или номер телефона(+7...)"));
+        table.setAlignment(Pos.CENTER);
+        
+        table.setVgap(15);
+        table.setHgap(50);
+    
+        login_lbl.setTooltip(new Tooltip("Email или номер телефона"));
         login_field.setPrefColumnCount(20);
         password_field.setPrefColumnCount(20);
 
@@ -136,7 +140,7 @@ public class Main extends Application{
                 String login    = login_field.getText();
                 String password = password_field.getText();
 
-                VerifyClientCodes verify_code = database.verifyClientInDB(login, password);
+                VerifyClientCodes verify_code = database.verifyClientInDB(-1, login, password);
                 switch (verify_code){
                     
                     case SUCCESS:
@@ -170,12 +174,14 @@ public class Main extends Application{
             }
         });
 
+
+        table.add(login_lbl, 0, 0);
+        table.add(password_lbl, 0, 1);
+        table.add(login_field, 1, 0);
+        table.add(password_field, 1, 1);
         
-        lbls_form.getChildren().addAll(login_lbl, password_lbl);
-        fields_form.getChildren().addAll(login_field, password_field);
-        auth_form.getChildren().addAll(lbls_form, fields_form);
         buttons.getChildren().addAll(registration_btn, authorization_btn);
-        root.getChildren().addAll(head_label, auth_form, lbl_err, buttons);
+        root.getChildren().addAll(head_label, table, lbl_err, buttons);
         
         return root;
 
@@ -183,9 +189,7 @@ public class Main extends Application{
 
     public VBox loadRegistrationWindow(){
         VBox root                   = new VBox(25);
-        VBox lbls_form              = new VBox(39);
-        VBox fields_form            = new VBox(30);
-        HBox reg_form               = new HBox(25);
+        GridPane table              = new GridPane();
         HBox buttons                = new HBox(150);
 
         Label head_label            = new Label("РЕГИСТРАЦИЯ");
@@ -193,7 +197,7 @@ public class Main extends Application{
         Label fio_lbl               = new Label("ФИО: ");
         Label nickname_lbl          = new Label("Как обращаться: ");
         Label email_lbl             = new Label("Email: ");
-        Label phone_lbl             = new Label("Номер телефона(+7...): ");
+        Label phone_lbl             = new Label("Номер телефона: ");
         Label birthday_lbl          = new Label("Дата Рождения(ДД.ММ.ГГГГ): ");
         Label password_lbl          = new Label("Пароль: ");
         
@@ -220,6 +224,9 @@ public class Main extends Application{
         authorization_btn.setPrefWidth(170);
         authorization_btn.setPrefHeight(25);
 
+        table.setVgap(30);
+        table.setHgap(50);
+
         authorization_btn.setOnAction(event->HelpFuncs.loadAuthorizationWindowFunc(authorization_btn, this));
 
         registration_btn.setOnAction(new EventHandler<ActionEvent>() {
@@ -235,7 +242,18 @@ public class Main extends Application{
                 try{birthday = birthday_field.getValue().toString();}
                 catch(Exception ex){lbl_err.setText("Заполните поле дата рождения корректно"); return;}
 
-                InsertClientCodes insert_code = database.insertNewClient(fio, nickname, email, phone, birthday, password);
+                ClientInfo new_client = new ClientInfo();
+                new_client.client_id = -1;
+                new_client.client_name = fio;
+                new_client.client_nickname = nickname;
+                new_client.client_email = email;
+                new_client.client_phone = phone;
+                new_client.client_psw = password;
+                new_client.client_birthday = birthday;
+                new_client.client_visits = 0;
+
+
+                InsertClientCodes insert_code = database.insertNewClient(new_client);
 
                 switch (insert_code){
                     case SUCCESS:
@@ -275,7 +293,7 @@ public class Main extends Application{
                         break;
 
                     case PHONE_ERR:
-                        lbl_err.setText("Некорректно написан телефон. Только номера из РФ(+7... и еще 10 цифр)");
+                        lbl_err.setText("Некорректно написан телефон. Только номера из РФ");
                         phone_field.clear();
                         break;
 
@@ -294,16 +312,27 @@ public class Main extends Application{
 
         
         head_label.setAlignment(Pos.CENTER);
-        reg_form.setAlignment(Pos.CENTER);
         buttons.setAlignment(Pos.CENTER);
         root.setAlignment(Pos.CENTER);
+        table.setAlignment(Pos.CENTER);
         
 
+        table.add(fio_lbl, 0, 0);
+        table.add(nickname_lbl, 0, 1);
+        table.add(email_lbl, 0, 2);
+        table.add(phone_lbl, 0, 3);
+        table.add(birthday_lbl, 0, 4);
+        table.add(password_lbl, 0, 5);
+
+        table.add(fio_field, 1, 0);
+        table.add(nickname_field, 1, 1);
+        table.add(email_field, 1, 2);
+        table.add(phone_field, 1, 3);
+        table.add(birthday_field, 1, 4);
+        table.add(password_field, 1, 5);
+
         buttons.getChildren().addAll(authorization_btn, registration_btn);
-        fields_form.getChildren().addAll(fio_field, nickname_field, email_field, phone_field, birthday_field, password_field);
-        lbls_form.getChildren().addAll(fio_lbl, nickname_lbl, email_lbl, phone_lbl, birthday_lbl, password_lbl);
-        reg_form.getChildren().addAll(lbls_form, fields_form);
-        root.getChildren().addAll(head_label, reg_form, lbl_err, buttons);
+        root.getChildren().addAll(head_label, table, lbl_err, buttons);
         
         return root;
 
@@ -367,11 +396,6 @@ public class Main extends Application{
                     int num = i;
                     more.setOnAction(event -> HelpFuncs.loadBookingPageWindowFunc(more, this, num, 1));
                     num_row++;
-                    // if (info.size() > 3 && i == 2){
-                    //     Button btn = new Button("Все записи");
-                    //     root.getChildren().add(btn);
-                    //     break;
-                    // }
                 }
             }
 
@@ -468,7 +492,7 @@ public class Main extends Application{
                 public void handle(ActionEvent event) {
                     int confirmation_code = HelpFuncs.confirmReBookingDialog(booking_info, database);  
                     if(confirmation_code == 1){
-                        int deleting_code = database.deleteBookingById(booking_info.booking_id);
+                        int deleting_code = database.cancelBookingById(booking_info.booking_id);
             
                         if (deleting_code == 1){
                             HelpFuncs.loadChooseEmployeeWindowFunc(transfer_btn, cur, booking_info.service_id);
@@ -505,7 +529,7 @@ public class Main extends Application{
         int alert_code = HelpFuncs.confirmDeleteBookingDialog(booking_id, database);
         
         if(alert_code == 1){
-            int deleting_code = database.deleteBookingById(booking_id);
+            int deleting_code = database.cancelBookingById(booking_id);
             
             if (deleting_code == 1){
                 HelpFuncs.loadMainWindowFunc(btn, this);
@@ -573,10 +597,10 @@ public class Main extends Application{
         btn_history.setPrefWidth(200);
         btn_history.setPrefHeight(100);
 
-        Button btn_promotions = new Button();
-        btn_promotions.setText("Карта лояльности");
-        btn_promotions.setPrefWidth(200);
-        btn_promotions.setPrefHeight(100);
+        Button btn_loyalty = new Button();
+        btn_loyalty.setText("Лояльность и Скидки");
+        btn_loyalty.setPrefWidth(200);
+        btn_loyalty.setPrefHeight(100);
 
 
         sideMenu.setStyle("-fx-background-color: lightgray;");
@@ -623,7 +647,7 @@ public class Main extends Application{
 
 
         VBox buttons_box = new VBox(20);
-        buttons_box.getChildren().addAll(btn_booking, btn_history, btn_promotions);
+        buttons_box.getChildren().addAll(btn_booking, btn_history, btn_loyalty);
         buttons_box.setAlignment(Pos.CENTER);
 
 
@@ -660,6 +684,7 @@ public class Main extends Application{
 
         toggleButton.setOnAction(event -> toggleMenu(sideMenu));
         btn_history.setOnAction(event->HelpFuncs.loadHistoryWindowFunc(btn_history, this));
+        btn_loyalty.setOnAction(event->HelpFuncs.loadLoyaltyWindowFunc(btn_loyalty, this));
         exit_btn.setOnAction(event->HelpFuncs.loadAuthorizationWindowFunc(exit_btn, this));
         side_menu_btn4.setOnAction(event->HelpFuncs.loadSettingsWindowFunc(side_menu_btn4, this));
         side_menu_btn1.setOnAction(event->new Thread(() -> HelpFuncs.openLink(about_url)).start());
@@ -804,9 +829,13 @@ public class Main extends Application{
                             catch(Exception exc){System.out.println(exc);}   
                         }
                         ImageView avatar_imageView = new ImageView(avatar_image);
-                        avatar_imageView.setFitHeight(150);
-                        avatar_imageView.setFitWidth(150);
+                        Circle circle = new Circle(avatar_imageView.getImage().getHeight()/20);
+                        avatar_imageView.setFitHeight(avatar_imageView.getImage().getHeight()/10);
+                        avatar_imageView.setFitWidth(avatar_imageView.getImage().getWidth()/10);
                         avatar_imageView.setPreserveRatio(true);
+                        avatar_imageView.setClip(circle);
+                        circle.setCenterX(avatar_imageView.getImage().getWidth()/20);
+                        circle.setCenterY(avatar_imageView.getImage().getHeight()/20);
 
 
                         employees_table.add(avatar_imageView, 0, num);
@@ -903,6 +932,9 @@ public class Main extends Application{
         table_employee.setHgap(20);
         table_employee.setVgap(20);
 
+        GridPane.setHalignment(avatar_imageView, HPos.CENTER);
+        GridPane.setValignment(avatar_imageView, VPos.CENTER);
+
         table_employee.add(new Label("Фото мастера"), 0, 0);
         table_employee.add(new Label("Имя мастера"), 1, 0);
         table_employee.add(new Label("Услуги"), 2, 0);
@@ -984,7 +1016,8 @@ public class Main extends Application{
                 cur_service_info    = database.getServiceInfoById(cur_book_info.service_id);
                 cur_employee_info   = database.getEmployeeInfoById(cur_book_info.employee_id);
                 if(cur_book_info.booking_status == 1){status = "Ждем Вас!";}
-                else{status = "Завершено!";}
+                else if(cur_book_info.booking_status == 2){status = "Отменено";}
+                else{status = "Завершено";}
 
                 table.add(new Label(String.format("%d", num_row)), 0, num_row);
                 table.add(new Label(cur_service_info.service_name), 1, num_row);
@@ -1012,17 +1045,29 @@ public class Main extends Application{
     }
 
     public VBox loadLoyaltyWindow() {
-        VBox root           = new VBox(100);
+        VBox root               = new VBox(100);
+        VBox const_discount_box = new VBox(25);
         
         Label head_label    = new Label("Это окно карты лояльности");
         
         Button back_btn     = new Button("Назад");
 
+        String loyalty_num = "Ваш номер в программе лояльности: " + client_info.client_id;
+        String discount = "Ваша текущая скидка: "+HelpFuncs.discountCalc(client_info, database)+"%";
+        String birthday_discount = "Также на день рождения у вас действует скидка 10% на все услуги и продукцию\n(Необходимо будет предоставить документ, подтверждающий право на скидку)";
+        Label loyalty_num_lbl = new Label(loyalty_num);
+        Label discount_lbl = new Label(discount);
+        Label birthday_discount_lbl = new Label(birthday_discount);
+
+
+        root.setAlignment(Pos.CENTER);
+        const_discount_box.setAlignment(Pos.CENTER);
+
 
         back_btn.setOnAction(event->HelpFuncs.loadMainWindowFunc(back_btn, this));
 
-        
-        root.getChildren().addAll(head_label, back_btn);
+        const_discount_box.getChildren().addAll(loyalty_num_lbl, discount_lbl, birthday_discount_lbl);        
+        root.getChildren().addAll(head_label, const_discount_box, back_btn);
         
         return root;
     }
@@ -1033,7 +1078,8 @@ public class Main extends Application{
         VBox fio_box                = new VBox(20);
         
         HBox avatar_box             = new HBox(25);
-        
+        HBox buttons_box            = new HBox(25);
+
         Label head_lbl              = new Label("Настройки");
         Label fio = new Label("ФИО: " + client_info.client_name);
         Label nickname = new Label("Имя пользователя: " + client_info.client_nickname);
@@ -1042,6 +1088,7 @@ public class Main extends Application{
         Label phone = new Label("Номер телефона: " + client_info.client_phone);
 
         Button back_btn             = new Button("Назад");
+        Button resetData_btn        = new Button("Изменить данные");
 
         Image avatar_image = null;
         try{avatar_image = new Image(new FileInputStream("photos/client_avatar.jpg"));}
@@ -1054,7 +1101,7 @@ public class Main extends Application{
 
 
         VBox.setMargin(head_lbl, new Insets(50, 0, 0, 0));
-        root.setAlignment(Pos.CENTER);
+        root.setAlignment(Pos.TOP_CENTER);
         
         Circle circle = new Circle(avatar_imageView.getImage().getHeight()/20);
         avatar_imageView.setFitHeight(avatar_imageView.getImage().getHeight()/10);
@@ -1064,15 +1111,138 @@ public class Main extends Application{
         circle.setCenterX(avatar_imageView.getImage().getWidth()/20);
         circle.setCenterY(avatar_imageView.getImage().getHeight()/20);
 
+        buttons_box.setAlignment(Pos.CENTER);
         avatar_box.setAlignment(Pos.CENTER);
         fio_box.setAlignment(Pos.CENTER);
 
         back_btn.setOnAction(event->HelpFuncs.loadMainWindowFunc(back_btn, this));
+        resetData_btn.setOnAction(event->HelpFuncs.loadResetDataWindowFunc(resetData_btn, this));
 
-
+        buttons_box.getChildren().addAll(back_btn, resetData_btn);
         avatar_box.getChildren().addAll(avatar_imageView);
         fio_box.getChildren().addAll(fio, nickname, birthday, email, phone);
-        root.getChildren().addAll(head_lbl, avatar_box, fio_box, back_btn);
+        root.getChildren().addAll(head_lbl, avatar_box, fio_box, buttons_box);
+
+        return root;
+    }
+
+    public VBox loadResetDataWindow(){
+        VBox root = new VBox(50);
+
+        Label head_lbl = new Label("Изменение данных");
+        Label lbl_err = new Label("");
+
+        GridPane table = new GridPane();
+        table.setAlignment(Pos.CENTER);
+        table.setHgap(20);
+        table.setVgap(20);
+
+        table.add(new Label("ФИО"), 0, 0);
+        table.add(new Label("Имя пользователя"), 0, 1);
+        table.add(new Label("Email"), 0, 2);
+        table.add(new Label("Номер телефона"), 0, 3);
+        table.add(new Label("Дата Рождения"), 0, 4);
+        table.add(new Label("Пароль"), 0, 5);
+
+        TextField fio_field         = new TextField(client_info.client_name);
+        TextField nickname_field    = new TextField(client_info.client_nickname);
+        TextField email_field       = new TextField(client_info.client_email);
+        TextField phone_field       = new TextField(client_info.client_phone);
+        DatePicker birthday_field   = new DatePicker(HelpFuncs.strToLocalDate(client_info.client_birthday));
+        TextField password_field    = new TextField(client_info.client_psw);
+        
+        table.add(fio_field, 1, 0);
+        table.add(nickname_field, 1, 1);
+        table.add(email_field, 1, 2);
+        table.add(phone_field, 1, 3);
+        table.add(birthday_field, 1, 4);
+        table.add(password_field, 1, 5);
+        
+
+        Button back_btn = new Button("Назад");
+        Button confirm_btn = new Button("Применить\nизменения");
+        HBox buttons_box = new HBox(25);
+        buttons_box.setAlignment(Pos.CENTER);
+
+
+        confirm_btn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                String fio      = fio_field.getText();
+                String nickname = nickname_field.getText();
+                String email    = email_field.getText();
+                String phone    = phone_field.getText();
+                String password = password_field.getText();
+                String birthday;
+                
+                try{birthday = birthday_field.getValue().toString();}
+                catch(Exception ex){lbl_err.setText("Заполните поле дата рождения корректно"); return;}
+
+                ClientInfo new_client = new ClientInfo();
+                new_client.client_id = client_info.client_id;
+                new_client.client_name = fio;
+                new_client.client_nickname = nickname;
+                new_client.client_email = email;
+                new_client.client_phone = phone;
+                new_client.client_psw = password;
+                new_client.client_birthday = birthday;
+                new_client.client_visits = client_info.client_visits;
+
+                InsertClientCodes code = database.updateClientInfo(new_client); 
+                switch (code){
+                    case SUCCESS:
+                        
+                        client_properties.setProperty("login", email);
+                        client_info = database.getClientInfoByLogin(email);
+
+                        database.createClientAvatar(client_info.client_id);
+
+                        try(OutputStream out = Files.newOutputStream(Paths.get("sources/client_props.properties"))){
+                            client_properties.store(out, "add info");
+                        }
+                        catch(Exception ex){System.out.println(ex);}
+
+                        try{confirm_btn.getScene().setRoot(loadSettingsWindow());}
+                        catch(Exception ex){System.out.println(ex);}
+                        break;
+
+                    case IN_BASE:
+                        lbl_err.setText("Аккаунт с такими данными уже есть. Используйте другие данные");
+                        break;
+                
+                    case DATABASE_CONN_ERR:
+                        confirm_btn.getScene().setRoot(loadDataBaseErrorWindow());
+                        break;
+
+                    case BIRTH_ERR:
+                        lbl_err.setText("Неправильно написана Дата Рождения. Вам должно быть более 1 года и меньше 150 лет!");
+                        break;
+
+                    case EMAIL_ERR:
+                        lbl_err.setText("Некорректно написан Email(не более 50 символов и знак @)");
+                        break;
+
+                    case PHONE_ERR:
+                        lbl_err.setText("Некорректно написан телефон. Только номера из РФ");
+                        break;
+
+                    case PSW_ERR:
+                        lbl_err.setText("Пароль должен состоять не менее чем из 8 символов и не более чем из 20");
+                        password_field.clear();
+                        break;
+                    case FILL_FIELD:
+                        lbl_err.setText("Пожалуйста, заполните все поля для регистрации");
+                        break;
+                
+                }    
+            }
+        });
+
+
+        back_btn.setOnAction(event->HelpFuncs.loadSettingsWindowFunc(back_btn, this));
+        root.setAlignment(Pos.CENTER);
+        buttons_box.getChildren().addAll(back_btn, confirm_btn);
+        root.getChildren().addAll(head_lbl, table, lbl_err, buttons_box);
 
         return root;
     }
