@@ -10,6 +10,10 @@ create table WORK_DAYS(Date date, Employee_ID int, Time_START time, Time_FINISH 
 
 create table DISCOUNTS_INFO(Date_ID int primary key auto_increment, Date date, Discount_min int, Discount_min_start int, Discount_mid int, Discount_mid_start int, Discount_max int, Discount_max_start int);
 
+create table EMPLOYEES_AVATARS(Image_ID int primary key auto_increment, Image_NAME TEXT, Image_FILE blob);
+
+create table GALERY(Image_ID int primary key auto_increment, Image_NAME TEXT, Image_FILE blob);
+
 
 
 
@@ -30,3 +34,23 @@ INSERT INTO DISCOUNTS_INFO (Date, Discount_min, Discount_min_start, Discount_mid
 
 
 mysql -h 46.138.162.233 -P 3306 -u client -p
+
+
+
+CREATE USER 'client'@'%' IDENTIFIED BY 'o643Th76_2005';
+
+GRANT SELECT, UPDATE, INSERT ON `VeronichkaNailsApp`.`CLIENTS` TO 'client'@'%';
+GRANT SELECT, UPDATE (Booking_STATUS), INSERT ON `VeronichkaNailsApp`.`BOOKING` TO 'client'@'%';
+GRANT SELECT ON `VeronichkaNailsApp`.`PRICE_LIST` TO 'client'@'%';
+GRANT SELECT ON `VeronichkaNailsApp`.`EMPLOYEES` TO 'client'@'%';
+GRANT SELECT, UPDATE (Timetable) ON `VeronichkaNailsApp`.`WORK_DAYS` TO 'client'@'%';
+GRANT SELECT ON `VeronichkaNailsApp`.`DISCOUNTS_INFO` TO 'client'@'%';
+
+GRANT SELECT, INSERT ON `VeronichkaNailsApp`.`EMPLOYEES_AVATARS` TO 'client'@'%';
+
+GRANT SELECT, INSERT ON `VeronichkaNailsApp`.`GALERY` TO 'client'@'%';
+
+
+SHOW GRANTS FOR 'client'@'%';
+
+FLUSH PRIVILEGES;

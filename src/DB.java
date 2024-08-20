@@ -31,6 +31,7 @@ enum VerifyClientCodes{
 
 public class DB {
     Connection connection;
+
     
     public DB(){
         this.connection = null;
@@ -41,9 +42,19 @@ public class DB {
         try(InputStream in = Files.newInputStream(Paths.get("sources/database.properties"))){
             props.load(in);
         }
-        String url = props.getProperty("url");
-        String username = props.getProperty("username");
-        String password = props.getProperty("password");
+        String encryptedUrl = props.getProperty("url");
+        String encryptedUsername = props.getProperty("username");
+        String encryptedPassword = props.getProperty("password");
+        String url = "";
+        String username = "";
+        String password = "";
+
+        try{
+            url = EncryptionUtil.decrypt(encryptedUrl);
+            username = EncryptionUtil.decrypt(encryptedUsername);
+            password = EncryptionUtil.decrypt(encryptedPassword);
+        }
+        catch(Exception ex){System.out.println(ex);}
         try {
             this.connection = DriverManager.getConnection(url, username, password);
             System.out.println("Connection to VeronichkaNailsApp DB succesfull!");
@@ -169,7 +180,7 @@ public class DB {
             Period period = Period.between(date_birth, date_now);
 
 
-            if (period.getYears() < 1 || client.client_birthday.indexOf("-") != 4 || client.client_birthday.lastIndexOf("-") != 7 || client.client_birthday.length() != 10 || period.getYears() > 150){System.out.println(client.client_birthday);return InsertClientCodes.BIRTH_ERR;}
+            if (period.getYears() < 1 || client.client_birthday.indexOf("-") != 4 || client.client_birthday.lastIndexOf("-") != 7 || client.client_birthday.length() != 10 || period.getYears() > 150){return InsertClientCodes.BIRTH_ERR;}
             
 
 
@@ -460,7 +471,8 @@ public class DB {
             for (int i = 0; i < booking_info.size(); i++){
                 LocalDateTime datetime_cur_booking = LocalDateTime.parse(booking_info.get(i).booking_datetime, formatter);
                 Duration duration = Duration.between(datetime_now, datetime_cur_booking);
-                if (duration.isNegative() && booking_info.get(i).booking_status == 1){
+
+                if (duration.toDays() <= -1 && booking_info.get(i).booking_status == 1){
                     this.changeBookingStatusById(booking_info.get(i).booking_id, 2);
                 }
 
@@ -468,6 +480,21 @@ public class DB {
         }
         catch(Exception ex){
             System.out.println(ex);
+        }
+    }
+
+    public LocalDateTime getCurrentDateTime(){
+        try{
+            Statement statement = this.connection.createStatement();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            ResultSet datetime_now_res = statement.executeQuery("SELECT NOW()");
+            datetime_now_res.next();
+            LocalDateTime datetime_now = LocalDateTime.parse(datetime_now_res.getString(1), formatter);
+            return datetime_now;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
         }
     }
 
@@ -697,7 +724,55 @@ public class DB {
         }
     }
 
-    
+    public void downloadEmployeesAvatar(){
+        try{
+            String sql = "SELECT * FROM EMPLOYEES_AVATARS";
+            PreparedStatement pstmt = this.connection.prepareStatement(sql);
+            // pstmt.setInt(1, 1);
+
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String name = rs.getString("Image_NAME");
+                byte[] imageBytes = rs.getBytes("Image_FILE");
+
+                // Сохранение изображения в файл
+                try (FileOutputStream fos = new FileOutputStream("photos/employees/"+name)) {
+                    fos.write(imageBytes);
+                    System.out.println("Image retrieved and saved in employees_avatar as: " + name);
+                }
+            }
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+        }
+    }
+
+    public int downloadGalery(){
+        try{
+            String sql = "SELECT * FROM GALERY";
+            PreparedStatement pstmt = this.connection.prepareStatement(sql);
+            // pstmt.setInt(1, 1);
+            int num = 0;
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                num++;
+                String name = rs.getString("Image_NAME");
+                byte[] imageBytes = rs.getBytes("Image_FILE");
+
+                // Сохранение изображения в файл
+                try (FileOutputStream fos = new FileOutputStream("photos/galery/"+name)) {
+                    fos.write(imageBytes);
+                    System.out.println("Image retrieved and saved in galery as: " + name);
+                }
+            }
+            return num;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return 0;
+        }
+    }
+
 }
 
 class ServiceInfo{

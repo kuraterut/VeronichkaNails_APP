@@ -9,6 +9,8 @@ import javafx.scene.control.Alert.AlertType;
 
 import javafx.scene.Node;
 
+import javafx.scene.input.MouseEvent;    
+
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
@@ -75,6 +77,7 @@ public class Main extends Application{
     GridPane employees_table;
     DB database;
     String about_url = "https://ru.stackoverflow.com/";
+    int galery_images_num;
      
     public static void main(String[] args) throws FileNotFoundException{
         launch(args);
@@ -103,7 +106,7 @@ public class Main extends Application{
         GridPane table                  = new GridPane();
         HBox buttons                    = new HBox(50);
         
-        Label head_label                = new Label("АВТОРИЗАЦИЯ");
+        Label head_lbl                = new Label("АВТОРИЗАЦИЯ");
         Label lbl_err                   = new Label("");
         Label login_lbl                 = new Label("Логин:  ");
         Label password_lbl              = new Label("Пароль: ");
@@ -181,7 +184,7 @@ public class Main extends Application{
         table.add(password_field, 1, 1);
         
         buttons.getChildren().addAll(registration_btn, authorization_btn);
-        root.getChildren().addAll(head_label, table, lbl_err, buttons);
+        root.getChildren().addAll(head_lbl, table, lbl_err, buttons);
         
         return root;
 
@@ -192,7 +195,7 @@ public class Main extends Application{
         GridPane table              = new GridPane();
         HBox buttons                = new HBox(150);
 
-        Label head_label            = new Label("РЕГИСТРАЦИЯ");
+        Label head_lbl            = new Label("РЕГИСТРАЦИЯ");
         Label lbl_err               = new Label("");
         Label fio_lbl               = new Label("ФИО: ");
         Label nickname_lbl          = new Label("Как обращаться: ");
@@ -311,7 +314,7 @@ public class Main extends Application{
 
 
         
-        head_label.setAlignment(Pos.CENTER);
+        head_lbl.setAlignment(Pos.CENTER);
         buttons.setAlignment(Pos.CENTER);
         root.setAlignment(Pos.CENTER);
         table.setAlignment(Pos.CENTER);
@@ -332,7 +335,7 @@ public class Main extends Application{
         table.add(password_field, 1, 5);
 
         buttons.getChildren().addAll(authorization_btn, registration_btn);
-        root.getChildren().addAll(head_label, table, lbl_err, buttons);
+        root.getChildren().addAll(head_lbl, table, lbl_err, buttons);
         
         return root;
 
@@ -454,7 +457,7 @@ public class Main extends Application{
         table_booking.add(new Label(HelpFuncs.parseDateTime(booking_info.booking_datetime)), 4, 1);
         table_booking.add(new Label(HelpFuncs.parseTime(service_info.service_time)), 5, 1);
 
-        try{avatar_image = new Image(new FileInputStream(String.format("photos/%d.jpg", employee_info.employee_id)));}
+        try{avatar_image = new Image(new FileInputStream(String.format("photos/employees/%d.jpg", employee_info.employee_id)));}
         catch(Exception ex){
             try{avatar_image = new Image(new FileInputStream("photos/standard.jpg"));}
             catch(Exception exc){System.out.println(exc);}
@@ -567,7 +570,13 @@ public class Main extends Application{
         
         BorderPane root = new BorderPane();
 
-        Label head_label = new Label("Приветствуем, " + client_info.client_nickname);
+        Label head_lbl = new Label("Приветствуем, " + client_info.client_nickname);
+        Label birthday_lbl = new Label("С Днем Рождения!\n\nВы получаете скидку 10% на 7 дней, успейте воспользоваться!");
+
+        
+        LocalDateTime now_LDT = database.getCurrentDateTime();
+        LocalDate birth_LD = HelpFuncs.strToLocalDate(client_info.client_birthday);
+        
 
         Image avatar_image = null;
         try{avatar_image = new Image(new FileInputStream("photos/client_avatar.jpg"));}
@@ -633,6 +642,7 @@ public class Main extends Application{
         // Скрываем меню за пределами экрана
         sideMenu.setTranslateX(-(MENU_WIDTH)); 
 
+
         // Кнопка для открытия/закрытия меню
         Button toggleButton = new Button("", menu_icon);
         
@@ -642,7 +652,7 @@ public class Main extends Application{
 
 
         VBox head_box = new VBox(20);
-        head_box.getChildren().addAll(head_label, avatar_imageView);
+        head_box.getChildren().addAll(head_lbl, avatar_imageView);
         head_box.setAlignment(Pos.CENTER);
 
 
@@ -652,9 +662,15 @@ public class Main extends Application{
 
 
         VBox central_box = new VBox(50);
-        central_box.getChildren().addAll(head_box, booking, buttons_box);        
+        if (now_LDT.getDayOfMonth() == birth_LD.getDayOfMonth() && now_LDT.getMonth() == birth_LD.getMonth()){
+            central_box.getChildren().addAll(head_box, booking, birthday_lbl, buttons_box);          
+        }
+        else{
+            central_box.getChildren().addAll(head_box, booking, buttons_box);
+        }
         VBox.setMargin(head_box, new Insets(40, 10, 10, 10));
         VBox.setMargin(booking, new Insets(0, 10, 10, 10));
+        central_box.setAlignment(Pos.CENTER);
         
         root.setCenter(central_box);
         root.setLeft(menu);
@@ -686,8 +702,9 @@ public class Main extends Application{
         btn_history.setOnAction(event->HelpFuncs.loadHistoryWindowFunc(btn_history, this));
         btn_loyalty.setOnAction(event->HelpFuncs.loadLoyaltyWindowFunc(btn_loyalty, this));
         exit_btn.setOnAction(event->HelpFuncs.loadAuthorizationWindowFunc(exit_btn, this));
-        side_menu_btn4.setOnAction(event->HelpFuncs.loadSettingsWindowFunc(side_menu_btn4, this));
         side_menu_btn1.setOnAction(event->new Thread(() -> HelpFuncs.openLink(about_url)).start());
+        side_menu_btn2.setOnAction(event->HelpFuncs.loadGaleryWindowFunc(side_menu_btn2, this, 0));
+        side_menu_btn4.setOnAction(event->HelpFuncs.loadSettingsWindowFunc(side_menu_btn4, this));
         return root;
     }
 
@@ -725,7 +742,7 @@ public class Main extends Application{
     public VBox loadBookingWindow() {
         VBox root           = new VBox(100);
         
-        Label head_label    = new Label("Выберите услугу");
+        Label head_lbl    = new Label("Выберите услугу");
         
         Button back_btn     = new Button("Назад");
         
@@ -761,7 +778,7 @@ public class Main extends Application{
         }
 
 
-        root.getChildren().addAll(head_label, table, back_btn);
+        root.getChildren().addAll(head_lbl, table, back_btn);
 
         back_btn.setOnAction(event->HelpFuncs.loadMainWindowFunc(back_btn, this));
         
@@ -823,7 +840,7 @@ public class Main extends Application{
                         
                         
                         Image avatar_image = null;
-                        try{avatar_image = new Image(new FileInputStream(String.format("photos/%d.jpg", employees_with_service.get(i))));}
+                        try{avatar_image = new Image(new FileInputStream(String.format("photos/employees/%d.jpg", employees_with_service.get(i))));}
                         catch(Exception ex){
                             try{avatar_image = new Image(new FileInputStream("photos/standard.jpg"));}
                             catch(Exception exc){System.out.println(exc);}   
@@ -909,7 +926,7 @@ public class Main extends Application{
         Button escape_btn       = new Button("Назад");
         
         Image avatar_image      = null;
-        try{avatar_image = new Image(new FileInputStream(String.format("photos/%d.jpg", employee_id)));}
+        try{avatar_image = new Image(new FileInputStream(String.format("photos/employees/%d.jpg", employee_id)));}
         catch(Exception ex){
             try{avatar_image = new Image(new FileInputStream("photos/standard.jpg"));}
             catch(Exception exc){System.out.println(exc);}
@@ -955,7 +972,7 @@ public class Main extends Application{
     public VBox loadHistoryWindow() {
         VBox root           = new VBox(100);
         
-        Label head_label    = new Label("История посещений");
+        Label head_lbl    = new Label("История посещений");
         
         Button back_btn     = new Button("Назад");
         
@@ -964,14 +981,14 @@ public class Main extends Application{
 
         if (info == null){
             Label err       = new Label("Ошибка получения данных");
-            root.getChildren().addAll(head_label, err);
+            root.getChildren().addAll(head_lbl, err);
             root.setAlignment(Pos.CENTER);
             
 
         }
         else if(info.isEmpty()){
             Label no_booking = new Label("Нет записей");
-            root.getChildren().addAll(head_label, no_booking);
+            root.getChildren().addAll(head_lbl, no_booking);
             root.setAlignment(Pos.CENTER);
             
         }
@@ -1034,7 +1051,7 @@ public class Main extends Application{
                 num_row++;
             }
             VBox.setMargin(scroll_table, new Insets(0, 50, 0, 50));
-            root.getChildren().addAll(head_label, scroll_table);
+            root.getChildren().addAll(head_lbl, scroll_table);
         }
 
 
@@ -1048,7 +1065,7 @@ public class Main extends Application{
         VBox root               = new VBox(100);
         VBox const_discount_box = new VBox(25);
         
-        Label head_label    = new Label("Это окно карты лояльности");
+        Label head_lbl    = new Label("Это окно карты лояльности");
         
         Button back_btn     = new Button("Назад");
 
@@ -1067,7 +1084,7 @@ public class Main extends Application{
         back_btn.setOnAction(event->HelpFuncs.loadMainWindowFunc(back_btn, this));
 
         const_discount_box.getChildren().addAll(loyalty_num_lbl, discount_lbl, birthday_discount_lbl);        
-        root.getChildren().addAll(head_label, const_discount_box, back_btn);
+        root.getChildren().addAll(head_lbl, const_discount_box, back_btn);
         
         return root;
     }
@@ -1247,6 +1264,95 @@ public class Main extends Application{
         return root;
     }
 
+    public BorderPane loadGaleryWindow(int page_num){
+        BorderPane root = new BorderPane();
+
+        VBox left_box = new VBox();
+        VBox right_box = new VBox();
+        left_box.setPrefWidth(MENU_WIDTH);
+        right_box.setPrefWidth(MENU_WIDTH);
+        left_box.setAlignment(Pos.CENTER_LEFT);
+        right_box.setAlignment(Pos.CENTER_RIGHT);
+
+        Label head_lbl = new Label("Галерея");
+        Button back_btn = new Button("Главное меню");
+
+        GridPane table = new GridPane();
+        
+        Button next_btn = new Button("Следующая");
+        Button prev_btn = new Button("Предыдущая");
+
+        int last_iter = 6*page_num+6;
+
+        if (page_num == (galery_images_num-1)/6 && page_num != 0){
+            left_box.getChildren().addAll(prev_btn);
+            last_iter = galery_images_num;
+        }
+        else if(page_num != (galery_images_num-1)/6 && page_num == 0){
+            right_box.getChildren().addAll(next_btn);
+        }
+        else if (page_num != (galery_images_num-1)/6 && page_num != 0){
+            right_box.getChildren().addAll(next_btn);
+            left_box.getChildren().addAll(prev_btn);
+        }
+
+        // root.setAlignment(Pos.CENTER);
+        table.setAlignment(Pos.CENTER);
+        table.setHgap(20);
+        table.setVgap(20);
+
+        int position = 1;
+        for (int i = 6*page_num+1; i <= last_iter; i++){
+            String file_path = String.format("photos/galery/%d.jpg", i);
+            Image avatar_image = null;
+            try{avatar_image = new Image(new FileInputStream(file_path));}
+            catch(Exception ex){System.out.println(ex);}
+            ImageView avatar_imageView = new ImageView(avatar_image);
+            avatar_imageView.setFitHeight(200);
+            avatar_imageView.setFitWidth(200);
+            avatar_imageView.addEventHandler(MouseEvent.MOUSE_ENTERED, e -> {
+                avatar_imageView.setScaleX(1.1); // Увеличение по оси X
+                avatar_imageView.setScaleY(1.1); // Увеличение по оси Y
+            });
+
+            avatar_imageView.addEventHandler(MouseEvent.MOUSE_EXITED, e -> {
+                avatar_imageView.setScaleX(1.0); // Возврат к исходному размеру по оси X
+                avatar_imageView.setScaleY(1.0); // Возврат к исходному размеру по оси Y
+            });
+            avatar_imageView.setOnMouseClicked(event -> HelpFuncs.openImageInBrowser(file_path));
+            avatar_imageView.setPreserveRatio(true);
+            table.add(avatar_imageView, (position-1)%3, (position-1)/3);
+            position++;
+        }
+
+        back_btn.setOnAction(event->HelpFuncs.loadMainWindowFunc(back_btn, this));
+        next_btn.setOnAction(event->HelpFuncs.loadGaleryWindowFunc(next_btn, this, page_num+1));
+        prev_btn.setOnAction(event->HelpFuncs.loadGaleryWindowFunc(prev_btn, this, page_num-1));
+        // root.getChildren().addAll(head_lbl, table, back_btn);
+        VBox head = new VBox(head_lbl);
+        head.setAlignment(Pos.CENTER);
+        VBox.setMargin(head_lbl, new Insets(100, 0, 0, 0));
+        VBox buttons = new VBox(back_btn);
+        buttons.setAlignment(Pos.CENTER);
+        VBox.setMargin(back_btn, new Insets(0, 0, 100, 0));
+
+        root.setCenter(table);
+        root.setTop(head);
+        root.setBottom(buttons);
+        root.setLeft(left_box);
+        root.setRight(right_box);
+        return root;
+    }
+
+
+    public VBox loadContactsWindow(){
+        VBox root = new VBox(50);
+        Label head_lbl = new Label("Контакты");
+
+        
+        
+        return root;
+    }
 
 
     @Override
@@ -1255,7 +1361,9 @@ public class Main extends Application{
 
         try{
             database.getConnection();
-            
+            database.downloadEmployeesAvatar();
+            galery_images_num = database.downloadGalery();
+
             Properties props = new Properties();
             
             try(InputStream in = Files.newInputStream(Paths.get("sources/client_props.properties"))){

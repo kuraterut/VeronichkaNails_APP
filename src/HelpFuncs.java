@@ -60,6 +60,12 @@ import java.time.format.*;
 import java.net.*;
 import java.awt.*;
 
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.util.Base64;
+
 
 
 public class HelpFuncs extends Main{
@@ -108,6 +114,9 @@ public class HelpFuncs extends Main{
 		node.getScene().setRoot(cur.loadResetDataWindow());
 	}
 
+	public static void loadGaleryWindowFunc(Node node, Main cur, int page_num){
+		node.getScene().setRoot(cur.loadGaleryWindow(page_num));
+	}
 
 
 	public static String parseDateTime(String datetime){
@@ -299,5 +308,43 @@ public class HelpFuncs extends Main{
     	int day = Integer.parseInt(date.split("-")[2]);
     	return LocalDate.of(year, month, day);
     }
+
+    public static void openImageInBrowser(String imagePath) {
+        try {
+            File imageFile = new File(imagePath);
+            if (imageFile.exists()) {
+                // Используем xdg-open для открытия файла
+                ProcessBuilder processBuilder = new ProcessBuilder("xdg-open", imageFile.getAbsolutePath());
+                processBuilder.start();
+            } else {
+                System.out.println("Файл не найден: " + imagePath);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+}
+
+class EncryptionUtil {
+   private static final String ALGORITHM = "AES";
+   private static final String TRANSFORMATION = "AES";
+   private static final String SECRET_KEY = "1549713486237445";
+
+   public static String encrypt(String data) throws Exception {
+       SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(), ALGORITHM);
+       Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+       cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+       byte[] encryptedData = cipher.doFinal(data.getBytes());
+       return Base64.getEncoder().encodeToString(encryptedData);
+   }
+
+   public static String decrypt(String encryptedData) throws Exception {
+       SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(), ALGORITHM);
+       Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+       cipher.init(Cipher.DECRYPT_MODE, secretKey);
+       byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(encryptedData));
+       return new String(decryptedData);
+   }
 
 }

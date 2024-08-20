@@ -36,9 +36,9 @@ run: $(Main_class) Makefile
 
 
 
-Help: src/Help.java Makefile
+Help: src/Help.java src/DB.java Makefile
 	@mkdir -p $(Bin_dir)
-	$(Compiler) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -d $(Bin_dir)  src/Help.java
+	$(Compiler) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -d $(Bin_dir)  src/Help.java src/DB.java 
 
 help: Help Makefile
 	$(Runner) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -classpath $(Bin_dir):$(JDBC_DRIVER) Help
