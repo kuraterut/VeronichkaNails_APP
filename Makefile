@@ -8,7 +8,8 @@ JDBC_DRIVER = ./sources/mysql-connector-java-9.0.0.jar
 Main_class = Main
 Bin_dir = ./bin
 Files = src/Main.java src/DB.java src/HelpFuncs.java
-
+# CSS = /home/kuraterut/Desktop/HSE/my_projects/JavaProjects/VeronichkaNails_App/src
+CSS = style
 
 
 
@@ -31,14 +32,14 @@ $(Main_class): $(Files) Makefile
 	$(Compiler) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -d $(Bin_dir) $(Files)
 
 run: $(Main_class) Makefile
-	$(Runner) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -classpath $(Bin_dir):$(JDBC_DRIVER) $(Main_class)
+	$(Runner) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -classpath $(Bin_dir):$(JDBC_DRIVER):$(CSS) $(Main_class)
 
 
 
 
 Help: src/Help.java src/DB.java Makefile
 	@mkdir -p $(Bin_dir)
-	$(Compiler) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -d $(Bin_dir)  src/Help.java src/DB.java 
+	$(Compiler) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -d $(Bin_dir)  src/Help.java 
 
 help: Help Makefile
 	$(Runner) --module-path $(Path_to_javaFX) --add-modules=$(Modules) -classpath $(Bin_dir):$(JDBC_DRIVER) Help

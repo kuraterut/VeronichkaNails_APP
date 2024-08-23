@@ -9,6 +9,9 @@ import javax.imageio.*;
 import java.awt.*;
 import java.awt.image.*;
 
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+
 enum InsertClientCodes{
     
     SUCCESS,
@@ -773,7 +776,59 @@ public class DB {
         }
     }
 
+    public SaloonInfo getSaloonInfo(){
+        try{
+            SaloonInfo saloon = new SaloonInfo();
+            String sql = "SELECT * FROM MAIN_SALOON_INFO";
+            PreparedStatement pstmt = this.connection.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                saloon.address = rs.getString("Address");
+                saloon.contacts = rs.getString("Contacts");
+                saloon.work_hours = rs.getString("WorkHours");
+                saloon.map = null;
+
+                byte[] imageBytes = rs.getBytes("Map");
+                try (FileOutputStream fos = new FileOutputStream("photos/map.jpg")) {
+                    fos.write(imageBytes);
+                    System.out.println("Image retrieved and saved in photos as: map.jpg" );
+                }
+                try{saloon.map = new Image(new FileInputStream("photos/map.jpg"));}
+                catch(Exception ex){
+                    saloon.map = null;
+                    System.out.println(ex);
+                }
+            }
+            return saloon;   
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return null;
+        }
+    }
+
+    public ArrayList<String[]> getFAQ(){
+        try{
+            ArrayList<String[]> list = new ArrayList<String[]>();
+            String sql = "SELECT * FROM FAQ";
+            PreparedStatement pstmt = this.connection.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String[] cur_quest = new String[2];
+                cur_quest[0] = rs.getString("Question");
+                cur_quest[1] = rs.getString("Answer");
+                list.add(cur_quest);
+            }
+            return list;
+        }
+        catch(Exception ex){
+            System.out.println(ex);
+            return new ArrayList<String[]>();
+        }
+    }
+
 }
+
 
 class ServiceInfo{
     int service_id;
@@ -812,4 +867,11 @@ class EmployeeInfo{
     String employee_exp;
     double employee_salary;
     String employee_services_id_set;
+}
+
+class SaloonInfo{
+    Image map;
+    String address;
+    String contacts;
+    String work_hours;
 }

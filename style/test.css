@@ -1,0 +1,25 @@
+.button:hover {
+	-fx-text-fill: blue;
+	-fx-background-color: yellow;
+	-fx-focus-traversable: true;
+	-fx-background-radius: 20px 20px 20px 20px;
+	-fx-cursor: hand;
+}
+
+.head-label:hover {
+	-fx-alignment: center;
+	-fx-text-alignment: center;
+	-fx-wrap-text: true;
+	-fx-text-fill: blue;
+	-fx-font-size: 25px;
+	-fx-background-color: pink;
+}
+
+.side-menu {
+	-fx-background-color: lightgray;
+}
+
+/*.border-pane {
+	-fx-background-color: gold;
+	-fx-border-color: gold;
+}*/

@@ -14,7 +14,9 @@ create table EMPLOYEES_AVATARS(Image_ID int primary key auto_increment, Image_NA
 
 create table GALERY(Image_ID int primary key auto_increment, Image_NAME TEXT, Image_FILE blob);
 
+create table MAIN_SALOON_INFO(DateTime datetime, Map longblob, Address text, Contacts text, WorkHours text);
 
+create table FAQ(Question text, Answer text);
 
 
 
@@ -49,6 +51,8 @@ GRANT SELECT ON `VeronichkaNailsApp`.`DISCOUNTS_INFO` TO 'client'@'%';
 GRANT SELECT, INSERT ON `VeronichkaNailsApp`.`EMPLOYEES_AVATARS` TO 'client'@'%';
 
 GRANT SELECT, INSERT ON `VeronichkaNailsApp`.`GALERY` TO 'client'@'%';
+GRANT SELECT, INSERT ON `VeronichkaNailsApp`.`MAIN_SALOON_INFO` TO 'client'@'%';
+GRANT SELECT, INSERT ON `VeronichkaNailsApp`.`FAQ` TO 'client'@'%';
 
 
 SHOW GRANTS FOR 'client'@'%';

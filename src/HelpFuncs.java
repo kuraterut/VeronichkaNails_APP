@@ -80,6 +80,7 @@ public class HelpFuncs extends Main{
 
 	public static void loadMainWindowFunc(Node node, Main cur){
 		node.getScene().setRoot(cur.loadMainWindow());
+		
 	}
 
 	public static void loadBookingWindowFunc(Node node, Main cur){
@@ -118,6 +119,15 @@ public class HelpFuncs extends Main{
 		node.getScene().setRoot(cur.loadGaleryWindow(page_num));
 	}
 
+	public static void loadContactsWindowFunc(Node node, Main cur){
+		node.getScene().setRoot(cur.loadContactsWindow());
+	}
+
+	public static void loadFAQWindowFunc(Node node, Main cur){
+		node.getScene().setRoot(cur.loadFAQWindow());
+	}
+
+	
 
 	public static String parseDateTime(String datetime){
         //2020-10-10 10:10:10
@@ -324,27 +334,53 @@ public class HelpFuncs extends Main{
         }
     }
 
+    public static Image getEmployeeAvatarById(int id){
+		Image avatar_image = null;
+		try{avatar_image = new Image(new FileInputStream(String.format("photos/employees/%d.jpg", id)));}
+        catch(Exception ex){
+            try{avatar_image = new Image(new FileInputStream("photos/standard.jpg"));}
+            catch(Exception exc){System.out.println(exc);}
+        }
+        return avatar_image;
+	}
+
+	public static Image getClientAvatar(){
+		Image avatar_image = null;
+        try{avatar_image = new Image(new FileInputStream("photos/client_avatar.jpg"));}
+        catch(Exception ex){System.out.println(ex);}
+        return avatar_image;
+	}
+
+	public static String getStrOfBookingStatus(BookingInfo info){
+		if(info.booking_status == 1){return "Ждем Вас!";}
+        else if(info.booking_status == 2){return "Отменено";}
+        else{return "Завершено";}
+	}
+
 }
 
 class EncryptionUtil {
-   private static final String ALGORITHM = "AES";
-   private static final String TRANSFORMATION = "AES";
-   private static final String SECRET_KEY = "1549713486237445";
+	private static final String ALGORITHM = "AES";
+	private static final String TRANSFORMATION = "AES";
+	private static final String SECRET_KEY = "1549713486237445";
 
-   public static String encrypt(String data) throws Exception {
-       SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(), ALGORITHM);
-       Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-       cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-       byte[] encryptedData = cipher.doFinal(data.getBytes());
-       return Base64.getEncoder().encodeToString(encryptedData);
-   }
+	public static String encrypt(String data) throws Exception {
+		SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(), ALGORITHM);
+		Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+		byte[] encryptedData = cipher.doFinal(data.getBytes());
+		return Base64.getEncoder().encodeToString(encryptedData);
+	}
 
-   public static String decrypt(String encryptedData) throws Exception {
-       SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(), ALGORITHM);
-       Cipher cipher = Cipher.getInstance(TRANSFORMATION);
-       cipher.init(Cipher.DECRYPT_MODE, secretKey);
-       byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(encryptedData));
-       return new String(decryptedData);
-   }
+	public static String decrypt(String encryptedData) throws Exception {
+		SecretKeySpec secretKey = new SecretKeySpec(SECRET_KEY.getBytes(), ALGORITHM);
+		Cipher cipher = Cipher.getInstance(TRANSFORMATION);
+		cipher.init(Cipher.DECRYPT_MODE, secretKey);
+		byte[] decryptedData = cipher.doFinal(Base64.getDecoder().decode(encryptedData));
+		return new String(decryptedData);
+	}
+
+	
+
 
 }
