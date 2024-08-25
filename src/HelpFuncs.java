@@ -2,6 +2,7 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 
 
+
 import javafx.scene.Scene;
 import javafx.scene.Group;
 
@@ -59,6 +60,12 @@ import java.time.*;
 import java.time.format.*;
 import java.net.*;
 import java.awt.*;
+import javax.mail.*;
+import javax.mail.internet.*;
+import javax.activation.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
+import java.util.Properties;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -355,6 +362,54 @@ public class HelpFuncs extends Main{
 		if(info.booking_status == 1){return "Ждем Вас!";}
         else if(info.booking_status == 2){return "Отменено";}
         else{return "Завершено";}
+	}
+
+	public static boolean sendMail(String from, String psw, String to, String subject, String content){
+		final String username = from;
+	    final String password = psw;
+
+	    Properties prop = new Properties();
+	    prop.put("mail.smtp.host", "smtp.gmail.com");
+	    prop.put("mail.smtp.port", "587");
+	    prop.put("mail.smtp.auth", "true");
+	    prop.put("mail.smtp.starttls.enable", "true"); //TLS
+	    
+	    Session session = Session.getInstance(prop,
+	        new javax.mail.Authenticator() {
+	            protected javax.mail.PasswordAuthentication getPasswordAuthentication() {
+	                return new javax.mail.PasswordAuthentication(username, password);
+	            }
+	        });
+
+	        try {
+
+	            Message message = new MimeMessage(session);
+	            message.setFrom(new InternetAddress(from));
+	            message.setRecipients(
+	                    Message.RecipientType.TO,
+	                    InternetAddress.parse(to)
+	            );
+	            message.setSubject(subject);
+	            message.setText(content);
+
+	            Transport.send(message);
+
+	            System.out.println("Done");
+	            return true;
+
+	        } catch (MessagingException e) {
+	            e.printStackTrace();
+	            return false;
+	    }
+	}
+
+	public static String getRandomPswAsStr(int size){
+		String ans = "";
+		Random rnd = new Random();
+		for (int i = 0; i < size; i++){
+			ans+=String.valueOf(rnd.nextInt(10));
+		}
+		return ans;
 	}
 
 }

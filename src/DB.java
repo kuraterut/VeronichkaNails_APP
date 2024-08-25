@@ -56,6 +56,9 @@ public class DB {
             url = EncryptionUtil.decrypt(encryptedUrl);
             username = EncryptionUtil.decrypt(encryptedUsername);
             password = EncryptionUtil.decrypt(encryptedPassword);
+            System.out.println(url);
+            System.out.println(username);
+            System.out.println(password);
         }
         catch(Exception ex){System.out.println(ex);}
         try {

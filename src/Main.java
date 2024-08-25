@@ -1,6 +1,7 @@
 import javafx.application.Application;
 import javafx.stage.Stage;
 
+import javax.mail.*;
 
 import javafx.scene.Scene;
 import javafx.scene.Group;
@@ -208,6 +209,10 @@ public class Main extends Application{
     }
 
     public VBox loadRegistrationWindow(){
+        
+
+
+
         VBox root                   = new VBox();
         HBox buttons                = new HBox();
         GridPane table              = new GridPane();
@@ -287,22 +292,21 @@ public class Main extends Application{
                 new_client.client_visits = 0;
 
 
-                InsertClientCodes insert_code = database.insertNewClient(new_client);
+                InsertClientCodes checking_code = database.checkClientInfo(new_client);
 
-                switch (insert_code){
+                switch (checking_code){
                     case SUCCESS:
-                        
-                        client_properties.setProperty("login", email);
-                        client_info = database.getClientInfoByLogin(email);
-
-                        database.createClientAvatar(client_info.client_id);
-
-                        try(OutputStream out = Files.newOutputStream(Paths.get("sources/client_props.properties"))){
-                            client_properties.store(out, "add info");
+                        String email_from = "kurylilia@gmail.com";
+                        String email_psw = "vkeu xdwc xybt jjlz";
+                        String subject = "Проверочный код VeronichkaNailsApp";
+                        String pass_code  = HelpFuncs.getRandomPswAsStr(6);
+                        String content = "Код для проверки подлинности Email\nВаш код: "+pass_code+".\nНикому не сообщайте этот код";
+                        if(HelpFuncs.sendMail(email_from, email_psw, email, subject, content)){
+                            registration_btn.getScene().setRoot(checkEmail(1, pass_code, new_client));
                         }
-                        catch(Exception ex){System.out.println(ex);}
-
-                        registration_btn.getScene().setRoot(loadMainWindow());
+                        else{
+                            lbl_err.setText("Ошибка отправки кода. Проверьте корректность почты и интернет-соединение");
+                        }
                         
                         break;
 
@@ -361,6 +365,93 @@ public class Main extends Application{
         root.getChildren().addAll(head_lbl, table, lbl_err, buttons);
         buttons.getChildren().addAll(authorization_btn, registration_btn);
         return root;
+    }
+
+    // 1-из регистрации
+    // 2-из авторизации
+    // 3-из изменения данных аккаунта
+    public VBox checkEmail(int from, String code, ClientInfo client){
+        VBox root               = new VBox();
+        HBox central_box        = new HBox();
+
+        Label head_lbl          = new Label();
+        Label code_lbl          = new Label();
+        Label lbl_err           = new Label();
+        Label info_lbl          = new Label();
+
+        TextField code_field    = new TextField();
+
+        Button code_btn         = new Button();
+        Button back_btn         = new Button();
+
+        lbl_err.setText("");
+        head_lbl.setText("Верификация");
+        info_lbl.setText("Код был отправлен на указанную вами почту. Пожалуйста введите его в поле ниже");
+        code_lbl.setText("Код: ");
+        code_btn.setText("Проверить");
+        back_btn.setText("Назад");
+
+
+
+        code_btn.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                if(from == 1){
+                    System.out.println(code);
+                    System.out.println(code_field.getText());
+                    if (code_field.getText().equals(code)){
+                        InsertClientCodes insert_code = database.insertNewClient(client);
+                        if (insert_code != InsertClientCodes.SUCCESS){code_btn.getScene().setRoot(loadDataBaseErrorWindow());return;}
+                        client_properties.setProperty("login", client.client_email);
+                        client_info = database.getClientInfoByLogin(client.client_email);
+
+                        database.createClientAvatar(client_info.client_id);
+
+                        try(OutputStream out = Files.newOutputStream(Paths.get("sources/client_props.properties"))){
+                            client_properties.store(out, "add info");
+                        }
+                        catch(Exception ex){System.out.println(ex);}
+
+                        code_btn.getScene().setRoot(loadMainWindow());
+                    }
+                    else{
+                        lbl_err.setText("Неверный код");
+                    }
+                }
+                else if(from == 3){
+                    InsertClientCodes update_code = database.updateClientInfo(client);
+                    if (code_field.getText().equals(code)){
+                        client_properties.setProperty("login", client.client_email);
+                        client_info = database.getClientInfoByLogin(client.client_email);
+
+                        database.createClientAvatar(client_info.client_id);
+
+                        try(OutputStream out = Files.newOutputStream(Paths.get("sources/client_props.properties"))){
+                            client_properties.store(out, "add info");
+                        }
+                        catch(Exception ex){System.out.println(ex);}
+
+                        code_btn.getScene().setRoot(loadSettingsWindow());
+                    }
+                    else{
+                        lbl_err.setText("Неверный код");
+                    }
+                }
+            }
+        });
+
+        if(from == 1){back_btn.setOnAction(event->HelpFuncs.loadRegistrationWindowFunc(back_btn, this));}
+        
+
+        root.setSpacing(25);
+        central_box.setSpacing(30);
+
+        root.setAlignment(Pos.CENTER);
+        central_box.setAlignment(Pos.CENTER);
+
+        central_box.getChildren().addAll(code_lbl, code_field, code_btn);
+        root.getChildren().addAll(head_lbl, info_lbl, central_box, lbl_err, back_btn);
+        return root; 
     }
 
 
@@ -1083,13 +1174,13 @@ public class Main extends Application{
 
         head_lbl.setText("Информация о мастере");
         escape_btn.setText("Назад");
+        table_employee_mid_lbl1.setText(employee.employee_name);
+        table_employee_mid_lbl2.setText(HelpFuncs.parseEmployeeServicesSet(employee.employee_services_id_set, database));
+        table_employee_mid_lbl3.setText(employee.employee_exp);
         table_employee_head_lbl0.setText("Фото мастера");
         table_employee_head_lbl1.setText("Имя мастера");
         table_employee_head_lbl2.setText("Услуги");
         table_employee_head_lbl3.setText("Стаж");
-        table_employee_mid_lbl1.setText(employee.employee_name);
-        table_employee_mid_lbl2.setText(HelpFuncs.parseEmployeeServicesSet(employee.employee_services_id_set, database));
-        table_employee_mid_lbl3.setText(employee.employee_exp);
 
         root.setSpacing(50);
         
@@ -1441,22 +1532,22 @@ public class Main extends Application{
                 new_client.client_birthday  = birthday;
                 new_client.client_visits    = client_info.client_visits;
 
-                InsertClientCodes code = database.updateClientInfo(new_client); 
-                switch (code){
+                InsertClientCodes checking_code = database.checkClientInfo(new_client); 
+                switch (checking_code){
                     case SUCCESS:
                         
-                        client_properties.setProperty("login", email);
-                        client_info = database.getClientInfoByLogin(email);
-
-                        database.createClientAvatar(client_info.client_id);
-
-                        try(OutputStream out = Files.newOutputStream(Paths.get("sources/client_props.properties"))){
-                            client_properties.store(out, "add info");
+                        String email_from = "kurylilia@gmail.com";
+                        String email_psw = "vkeu xdwc xybt jjlz";
+                        String subject = "Проверочный код VeronichkaNailsApp";
+                        String pass_code  = HelpFuncs.getRandomPswAsStr(6);
+                        String content = "Код для проверки подлинности Email\nВаш код: "+pass_code+".\nНикому не сообщайте этот код";
+                        if(HelpFuncs.sendMail(email_from, email_psw, email, subject, content)){
+                            confirm_btn.getScene().setRoot(checkEmail(3, pass_code, new_client));
                         }
-                        catch(Exception ex){System.out.println(ex);}
+                        else{
+                            lbl_err.setText("Ошибка отправки кода. Проверьте корректность почты и интернет-соединение");
+                        }
 
-                        confirm_btn.getScene().setRoot(loadSettingsWindow());
-                        
                         break;
 
                     case IN_BASE:
