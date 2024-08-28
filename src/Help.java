@@ -42,12 +42,7 @@ class EncryptionUtil {
 public class Help{
     public static void main(String[] args) {
         try{
-            DB database = new DB();
-            database.getConnection();
-            PreparedStatement pstmt = connection.prepareStatement("INSERT INTO IMAGES (Image_NAME, Image_FILE) VALUES (??)");
-            FileInputStream fis = new FileInputStream(new File("photos/1.jpg"));
-            pstmt.setBinaryStream(1, fis, (int) new File("photos/1.jpg").length());
-            pstmt.executeUpdate();
+            System.out.println(EncryptionUtil.encrypt("jdbc:mysql://95.165.99.218:3306/VeronichkaNailsApp?serverTimezone=Europe/Moscow&useSSL=false&allowPublicKeyRetrieval=true"));
         }
         catch(Exception ex){
             System.out.println(ex);
